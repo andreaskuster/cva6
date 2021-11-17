@@ -7,7 +7,9 @@
 // this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
-
+//
+// Author: Florian Zaruba, ETH Zurich
+// Author: Andreas Kuster <kustera@ethz.ch>
 // Xilinx Peripehrals
 
 module ariane_peripherals #(
@@ -30,6 +32,7 @@ module ariane_peripherals #(
     AXI_BUS.Slave      gpio            ,
     AXI_BUS.Slave      ethernet        ,
     AXI_BUS.Slave      timer           ,
+    AXI_BUS.Slave      dma             ,
     output logic [1:0] irq_o           ,
     // UART
     input  logic       rx_i            ,
@@ -830,5 +833,13 @@ module ariane_peripherals #(
             .PSLVERR ( timer_pslverr    ),
             .irq_o   ( irq_sources[6:3] )
         );
+    
+    // 7. DMA Controller 
+    
+    // TODO: Add AXI Slave for dma register access here
+
+    // TODO: Instantiate iDMA controller here
+
+
     end
 endmodule

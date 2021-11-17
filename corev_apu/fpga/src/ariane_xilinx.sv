@@ -7,9 +7,10 @@
 // this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
-
-// Description: Xilinx FPGA top-level
+//
 // Author: Florian Zaruba <zarubaf@iis.ee.ethz.ch>
+// Author: Andreas Kuster <kustera@ethz.ch>
+// Description: Xilinx FPGA top-level
 
 module ariane_xilinx (
 `ifdef GENESYSII
@@ -280,6 +281,7 @@ axi_node_wrap_with_slices #(
         ariane_soc::SPIBase,
         ariane_soc::EthernetBase,
         ariane_soc::GPIOBase,
+        ariane_soc::DMABase,
         ariane_soc::DRAMBase
     }),
     .end_addr_i   ({
@@ -292,6 +294,7 @@ axi_node_wrap_with_slices #(
         ariane_soc::SPIBase      + ariane_soc::SPILength - 1,
         ariane_soc::EthernetBase + ariane_soc::EthernetLength -1,
         ariane_soc::GPIOBase     + ariane_soc::GPIOLength - 1,
+        ariane_soc::DMABase      + ariane_soc::DMALength - 1,
         ariane_soc::DRAMBase     + ariane_soc::DRAMLength - 1
     }),
     .valid_rule_i (ariane_soc::ValidRule)
@@ -810,6 +813,7 @@ ariane_peripherals #(
     .eth_clk_i    ( eth_clk                      ),
     .ethernet     ( master[ariane_soc::Ethernet] ),
     .timer        ( master[ariane_soc::Timer]    ),
+    .dma          ( master[ariane_soc::DMA]      ),
     .irq_o        ( irq                          ),
     .rx_i         ( rx                           ),
     .tx_o         ( tx                           ),
