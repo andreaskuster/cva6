@@ -578,6 +578,7 @@ module ariane_testharness #(
       ariane_soc::SPIBase,
       ariane_soc::EthernetBase,
       ariane_soc::GPIOBase,
+      ariane_soc::DMABase,
       ariane_soc::DRAMBase
     }),
     .end_addr_i   ({
@@ -590,6 +591,7 @@ module ariane_testharness #(
       ariane_soc::SPIBase      + ariane_soc::SPILength - 1,
       ariane_soc::EthernetBase + ariane_soc::EthernetLength -1,
       ariane_soc::GPIOBase     + ariane_soc::GPIOLength - 1,
+      ariane_soc::DMABase      + ariane_soc::DMALength - 1,
       ariane_soc::DRAMBase     + ariane_soc::DRAMLength - 1
     }),
     .valid_rule_i (ariane_soc::ValidRule)
@@ -656,6 +658,8 @@ module ariane_testharness #(
     .spi       ( master[ariane_soc::SPI]      ),
     .ethernet  ( master[ariane_soc::Ethernet] ),
     .timer     ( master[ariane_soc::Timer]    ),
+    .sdma      ( master[ariane_soc::SDMA]     ),
+    .mdma      ( slave[ariane_soc::MDMA]      ),
     .irq_o     ( irqs                         ),
     .rx_i      ( rx                           ),
     .tx_o      ( tx                           ),
