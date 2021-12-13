@@ -19,7 +19,7 @@ module ariane_peripherals #(
     parameter bit InclEthernet = 0,
     parameter bit InclGPIO     = 0,
     parameter bit InclTimer    = 1,
-    parameter bit InclDMA      = 1
+    parameter bit InclDMA      = 0
 ) (
     input  logic       clk_i           , // Clock
     input  logic       rst_ni          , // Asynchronous reset active low
@@ -28,8 +28,8 @@ module ariane_peripherals #(
     AXI_BUS.Slave      spi             ,
     AXI_BUS.Slave      ethernet        ,
     AXI_BUS.Slave      timer           ,
-    AXI_BUS.Slave      sdma            ,
-    AXI_BUS.Master     mdma            ,
+    AXI_BUS.Slave      sdma            , // dma control
+    //AXI_BUS.Master     mdma            , // dma engine 
     output logic [1:0] irq_o           ,
     // UART
     input  logic       rx_i            ,
@@ -624,27 +624,27 @@ module ariane_peripherals #(
 
         dma_core_wrap
         #(
-          .NB_CORES(1),
+          //.NB_CORES(1),
           .AXI_ADDR_WIDTH(AxiAddrWidth),
           .AXI_DATA_WIDTH(AxiDataWidth),
           .AXI_USER_WIDTH(AxiUserWidth),
-          .AXI_ID_WIDTH(AxiIdWidth),
+          .AXI_ID_WIDTH(AxiIdWidth)
           //parameter PE_ID_WIDTH        = 1,
           //parameter NB_PE_PORTS        = 1,
           //parameter DATA_WIDTH         = 64,
           //parameter ADDR_WIDTH         = 64,
           //parameter BE_WIDTH           = DATA_WIDTH/8,
-          .NUM_STREAMS(1),
+          //.NUM_STREAMS(1)
           //parameter TCDM_SIZE          = 0
         ) i_dma (
           .clk_i(clk_i),
           .rst_ni(rst_ni),
-          .test_mode_i(1'b0),
+          //.test_mode_i(1'b0),
           //XBAR_PERIPH_BUS.Slave            pe_ctrl_slave[NB_PE_PORTS-1:0],
           //XBAR_TCDM_BUS.Slave              ctrl_slave[NB_CORES-1:0],
           //hci_core_intf.master             tcdm_master[3:0],
-          .ext_master(slave[ariane_soc::MDMA]),
-          .ext_slave(master[ariane_soc::SDMA]),
+          .axi_master(mdma),
+          .axi_slave(sdma)
           //output logic [NB_CORES-1:0]      term_event_o,
           //output logic [NB_CORES-1:0]      term_irq_o,
           //output logic [NB_PE_PORTS-1:0]   term_event_pe_o,
@@ -653,22 +653,5 @@ module ariane_peripherals #(
         );
        
     end
-
-
-        // ariane_axi::req_t    axi_mdma_req;
-    // ariane_axi::resp_t   axi_mdma_resp;
-    // axi_master_connect i_axi_master_connect_dma (
-    //     .axi_req_i(axi_mdma_req), 
-    //     .axi_resp_o(axi_mdma_resp), 
-    //     .master(slave[ariane_soc::MDMA]));
-
-    // ariane_axi_soc::req_t    axi_sdma_req;
-    // ariane_axi_soc::resp_t   axi_sdma_resp;
-    // axi_slave_connect i_axi_slave_connect_dma (
-    //     .axi_req_o(axi_sdma_req), 
-    //     .axi_resp_i(axi_sdma_resp), 
-    //     .slave(master[ariane_soc::SDMA]));
-
-
 
 endmodule

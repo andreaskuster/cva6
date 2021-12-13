@@ -18,19 +18,19 @@ package ariane_soc;
   // Uart, SPI, Ethernet, reserved
   localparam int unsigned NumSources = 30;
   localparam int unsigned MaxPriority = 7;
-
+  
   localparam NrSlaves = 2; // actually masters, but slaves on the crossbar
-
+ 
   // 4 is recommended by AXI standard, so lets stick to it, do not change
   localparam IdWidth   = 4;
   localparam IdWidthSlave = IdWidth + $clog2(NrSlaves);
 
   typedef enum int unsigned {
     CVA6 = 0,
-    // TODO:     = 1,
-    MDMA  = 2 // dma master port for the engine (transactions)   
+    DEBUG  = 1,   
+    MDMA = 2 // dma master port for the engine (transactions) 
   } axi_master_t;
-
+  
   localparam NB_AXI_MASTERS = MDMA + 1;
 
 

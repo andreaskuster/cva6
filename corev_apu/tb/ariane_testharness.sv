@@ -659,7 +659,7 @@ module ariane_testharness #(
     .ethernet  ( master[ariane_soc::Ethernet] ),
     .timer     ( master[ariane_soc::Timer]    ),
     .sdma      ( master[ariane_soc::SDMA]     ),
-    .mdma      ( slave[ariane_soc::MDMA]      ),
+    //.mdma      ( slave[ariane_soc::MDMA]      ),
     .irq_o     ( irqs                         ),
     .rx_i      ( rx                           ),
     .tx_o      ( tx                           ),
