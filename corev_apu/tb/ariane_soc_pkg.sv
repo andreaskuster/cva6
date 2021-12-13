@@ -26,6 +26,15 @@ package ariane_soc;
   localparam IdWidthSlave = IdWidth + $clog2(NrSlaves);
 
   typedef enum int unsigned {
+    CVA6 = 0,
+    // TODO:     = 1,
+    MDMA  = 2 // dma master port for the engine (transactions)   
+  } axi_master_t;
+
+  localparam NB_AXI_MASTERS = MDMA + 1;
+
+
+  typedef enum int unsigned {
     DRAM     =  0,
     GPIO     =  1,
     Ethernet =  2,
@@ -36,10 +45,10 @@ package ariane_soc;
     CLINT    =  7,
     ROM      =  8,
     Debug    =  9,
-    DMA      = 10,
+    SDMA     = 10 // dma slave port for configuration of the engine
   } axi_slaves_t;
 
-  localparam NB_PERIPHERALS = DMA + 1;
+  localparam NB_PERIPHERALS = SDMA + 1;
 
 
   localparam logic[63:0] DebugLength    = 64'h1000;
