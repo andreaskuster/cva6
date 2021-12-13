@@ -10,6 +10,9 @@ package:
 export_include_dirs:
   - common/submodules/common_cells/include/
 
+dependencies:
+        idma: { git: "https://iis-git.ee.ethz.ch/bslk/idma.git", rev: cva6 } # TODO: eventually open-source this
+
 sources:
   - defines:
       WT_DCACHE: 1
