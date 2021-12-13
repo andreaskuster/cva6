@@ -155,11 +155,11 @@ module ariane_xilinx (
 );
 // 24 MByte in 8 byte words
 localparam NumWords = (24 * 1024 * 1024) / 8;
-localparam NBSlave = 2; // debug, ariane
+localparam NBSlave = 3; // debug:0 , cva6: 1, dma: 2
 localparam AxiAddrWidth = 64;
 localparam AxiDataWidth = 64;
 localparam AxiIdWidthMaster = 4;
-localparam AxiIdWidthSlaves = AxiIdWidthMaster + $clog2(NBSlave); // 5
+localparam AxiIdWidthSlaves = AxiIdWidthMaster + $clog2(NBSlave);
 localparam AxiUserWidth = 1;
 
 AXI_BUS #(
@@ -813,7 +813,8 @@ ariane_peripherals #(
     .eth_clk_i    ( eth_clk                      ),
     .ethernet     ( master[ariane_soc::Ethernet] ),
     .timer        ( master[ariane_soc::Timer]    ),
-    .dma          ( master[ariane_soc::DMA]      ),
+    .sdma         ( master[ariane_soc::SDMA]     ),
+    .mdma         ( slave[ariane_soc::MDMA]      ),
     .irq_o        ( irq                          ),
     .rx_i         ( rx                           ),
     .tx_o         ( tx                           ),
