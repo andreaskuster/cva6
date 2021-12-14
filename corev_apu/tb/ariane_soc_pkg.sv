@@ -17,7 +17,7 @@ package ariane_soc;
   localparam int unsigned NumSources = 30;
   localparam int unsigned MaxPriority = 7;
 
-  localparam NrSlaves = 2; // actually masters, but slaves on the crossbar
+  localparam NrSlaves = 3; // actually masters, but slaves on the crossbar
 
   // 4 is recommended by AXI standard, so lets stick to it, do not change
   localparam IdWidth   = 4;
@@ -33,7 +33,8 @@ package ariane_soc;
     PLIC     = 6,
     CLINT    = 7,
     ROM      = 8,
-    Debug    = 9
+    Debug    = 9,
+    DMA      = 10
   } axi_slaves_t;
 
   localparam NB_PERIPHERALS = Debug + 1;
@@ -48,6 +49,7 @@ package ariane_soc;
   localparam logic[63:0] SPILength      = 64'h800000;
   localparam logic[63:0] EthernetLength = 64'h10000;
   localparam logic[63:0] GPIOLength     = 64'h1000;
+  //localparam logic[63:0] DMALength      = 64'h1000;
   localparam logic[63:0] DRAMLength     = 64'h40000000; // 1GByte of DDR (split between two chips on Genesys2)
   localparam logic[63:0] SRAMLength     = 64'h1800000;  // 24 MByte of SRAM
   // Instantiate AXI protocol checkers
@@ -63,6 +65,7 @@ package ariane_soc;
     SPIBase      = 64'h2000_0000,
     EthernetBase = 64'h3000_0000,
     GPIOBase     = 64'h4000_0000,
+    //DMABase      = 64'h5000_0000,
     DRAMBase     = 64'h8000_0000
   } soc_bus_start_t;
 

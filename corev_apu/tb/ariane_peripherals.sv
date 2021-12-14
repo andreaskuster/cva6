@@ -18,7 +18,8 @@ module ariane_peripherals #(
     parameter bit InclSPI      = 0,
     parameter bit InclEthernet = 0,
     parameter bit InclGPIO     = 0,
-    parameter bit InclTimer    = 1
+    parameter bit InclTimer    = 1,
+    parameter bit InclDMA    = 1
 ) (
     input  logic       clk_i           , // Clock
     input  logic       rst_ni          , // Asynchronous reset active low
@@ -27,6 +28,8 @@ module ariane_peripherals #(
     AXI_BUS.Slave      spi             ,
     AXI_BUS.Slave      ethernet        ,
     AXI_BUS.Slave      timer           ,
+    //AXI_BUS.Slave      sdma            ,
+    AXI_BUS.Master     mdma            ,
     output logic [1:0] irq_o           ,
     // UART
     input  logic       rx_i            ,
