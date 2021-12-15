@@ -29,7 +29,7 @@ module ariane_peripherals #(
     AXI_BUS.Slave      ethernet        ,
     AXI_BUS.Slave      timer           ,
     AXI_BUS.Slave      sdma            , // dma control
-    //AXI_BUS.Master     mdma            , // dma engine 
+    AXI_BUS.Master     mdma            , // dma engine 
     output logic [1:0] irq_o           ,
     // UART
     input  logic       rx_i            ,

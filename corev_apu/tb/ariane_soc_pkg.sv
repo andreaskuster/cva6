@@ -18,37 +18,34 @@ package ariane_soc;
   // Uart, SPI, Ethernet, reserved
   localparam int unsigned NumSources = 30;
   localparam int unsigned MaxPriority = 7;
-  
-  localparam NrSlaves = 2; // actually masters, but slaves on the crossbar
- 
-  // 4 is recommended by AXI standard, so lets stick to it, do not change
-  localparam IdWidth   = 4;
-  localparam IdWidthSlave = IdWidth + $clog2(NrSlaves);
 
   typedef enum int unsigned {
     CVA6 = 0,
     DEBUG  = 1,   
     MDMA = 2 // dma master port for the engine (transactions) 
   } axi_master_t;
-  
   localparam NB_AXI_MASTERS = MDMA + 1;
 
+  localparam NrSlaves = NB_AXI_MASTERS; // actually masters, but slaves on the crossbar
+ 
+  // 4 is recommended by AXI standard, so lets stick to it, do not change
+  localparam IdWidth   = 4;
+  localparam IdWidthSlave = IdWidth + $clog2(NrSlaves);
 
   typedef enum int unsigned {
     DRAM     =  0,
-    GPIO     =  1,
-    Ethernet =  2,
-    SPI      =  3,
-    Timer    =  4,
-    UART     =  5,
-    PLIC     =  6,
-    CLINT    =  7,
-    ROM      =  8,
-    Debug    =  9,
-    SDMA     = 10 // dma slave port for configuration of the engine
-  } axi_slaves_t;
-
-  localparam NB_PERIPHERALS = SDMA + 1;
+    SDMA     =  1, // dma slave port for configuration of the engine
+    GPIO     =  2,
+    Ethernet =  3,
+    SPI      =  4,
+    Timer    =  5,
+    UART     =  6,
+    PLIC     =  7,
+    CLINT    =  8,
+    ROM      =  9,
+    Debug    =  10
+    } axi_slaves_t; // must be in order from highest address to lowest
+  localparam NB_PERIPHERALS = Debug + 1;
 
 
   localparam logic[63:0] DebugLength    = 64'h1000;
