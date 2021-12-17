@@ -20,13 +20,12 @@ package ariane_soc;
   localparam int unsigned MaxPriority = 7;
 
   typedef enum int unsigned {
-    CVA6 = 0,
+    CVA6   = 0,
     DEBUG  = 1,   
-    MDMA = 2 // dma master port for the engine (transactions) 
+    MDMA   = 2 // dma master port for the engine (transactions) 
   } axi_master_t;
-  localparam NB_AXI_MASTERS = MDMA + 1;
-
-  localparam NrSlaves = NB_AXI_MASTERS; // actually masters, but slaves on the crossbar
+  
+  localparam NrSlaves = MDMA + 1; // actually masters, but slaves on the crossbar
  
   // 4 is recommended by AXI standard, so lets stick to it, do not change
   localparam IdWidth   = 4;
@@ -45,6 +44,7 @@ package ariane_soc;
     ROM      =  9,
     Debug    =  10
     } axi_slaves_t; // must be in order from highest address to lowest
+
   localparam NB_PERIPHERALS = Debug + 1;
 
 
