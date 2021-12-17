@@ -277,7 +277,7 @@ module ariane_testharness #(
   axi_master_connect i_dm_axi_master_connect (
     .axi_req_i(dm_axi_m_req),
     .axi_resp_o(dm_axi_m_resp),
-    .master(slave[1])
+    .master(slave[1]) //.master(slave[ariane_soc::DEBUG])
   );
 
   axi_adapter #(
@@ -659,7 +659,7 @@ module ariane_testharness #(
     .ethernet  ( master[ariane_soc::Ethernet] ),
     .timer     ( master[ariane_soc::Timer]    ),
     .sdma      ( master[ariane_soc::SDMA]     ),
-    .mdma      ( slave[ariane_soc::MDMA]      ),
+    .mdma      ( slave[2]      ),     //.mdma      ( slave[ariane_soc::MDMA]      ),
     .irq_o     ( irqs                         ),
     .rx_i      ( rx                           ),
     .tx_o      ( tx                           ),
@@ -715,7 +715,7 @@ module ariane_testharness #(
   axi_master_connect i_axi_master_connect_ariane (
     .axi_req_i(axi_ariane_req),
     .axi_resp_o(axi_ariane_resp),
-    .master(slave[0])
+    .master(slave[0])//.master(slave[ariane_soc::CVA6])
   );
 
   // -------------

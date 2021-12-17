@@ -13,13 +13,13 @@ module ariane_peripherals #(
     parameter int AxiAddrWidth = -1,
     parameter int AxiDataWidth = -1,
     parameter int AxiIdWidth   = -1,
-    parameter int AxiUserWidth = 1,
-    parameter bit InclUART     = 1,
-    parameter bit InclSPI      = 0,
-    parameter bit InclEthernet = 0,
-    parameter bit InclGPIO     = 0,
-    parameter bit InclTimer    = 1,
-    parameter bit InclDMA      = 0
+    parameter int AxiUserWidth =  1,
+    parameter bit InclUART     =  1,
+    parameter bit InclSPI      =  0,
+    parameter bit InclEthernet =  0,
+    parameter bit InclGPIO     =  0,
+    parameter bit InclTimer    =  1,
+    parameter bit InclDMA      =  1
 ) (
     input  logic       clk_i           , // Clock
     input  logic       rst_ni          , // Asynchronous reset active low
@@ -619,16 +619,16 @@ module ariane_peripherals #(
         );
     end
 
-    // 7. DMA Controller 
+    // 6. DMA Controller 
     if (InclDMA) begin : gen_dma
 
         dma_core_wrap
         #(
           //.NB_CORES(1),
-          .AXI_ADDR_WIDTH(AxiAddrWidth),
-          .AXI_DATA_WIDTH(AxiDataWidth),
-          .AXI_USER_WIDTH(AxiUserWidth),
-          .AXI_ID_WIDTH(AxiIdWidth)
+          .AXI_ADDR_WIDTH   ( AxiAddrWidth ),
+          .AXI_DATA_WIDTH   ( AxiDataWidth ),
+          .AXI_USER_WIDTH   ( AxiUserWidth ),
+          .AXI_ID_WIDTH     ( AxiIdWidth   )
           //parameter PE_ID_WIDTH        = 1,
           //parameter NB_PE_PORTS        = 1,
           //parameter DATA_WIDTH         = 64,
@@ -637,14 +637,14 @@ module ariane_peripherals #(
           //.NUM_STREAMS(1)
           //parameter TCDM_SIZE          = 0
         ) i_dma (
-          .clk_i(clk_i),
-          .rst_ni(rst_ni),
+          .clk_i            ( clk_i         ),
+          .rst_ni           ( rst_ni        ),
           //.test_mode_i(1'b0),
           //XBAR_PERIPH_BUS.Slave            pe_ctrl_slave[NB_PE_PORTS-1:0],
           //XBAR_TCDM_BUS.Slave              ctrl_slave[NB_CORES-1:0],
           //hci_core_intf.master             tcdm_master[3:0],
-          .axi_master(mdma),
-          .axi_slave(sdma)
+          .axi_master       ( mdma          ),
+          .axi_slave        ( sdma          )
           //output logic [NB_CORES-1:0]      term_event_o,
           //output logic [NB_CORES-1:0]      term_irq_o,
           //output logic [NB_PE_PORTS-1:0]   term_event_pe_o,
