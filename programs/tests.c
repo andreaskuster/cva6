@@ -54,7 +54,7 @@ int main(int argc, char const *argv[]) {
 
     // [debug] print stack address
     char test[] = "asdf";
-    printf("charptr@%p", &test);
+    printf("charptr@%p\n", &test);
 
 
     /*
