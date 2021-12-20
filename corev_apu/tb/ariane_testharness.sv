@@ -643,7 +643,7 @@ module ariane_testharness #(
   `ifdef SPIKE_TANDEM
     .InclUART     ( 1'b0                     ),
   `else
-    .InclUART     ( 1'b1                     ),
+    .InclUART     ( 1'b0                     ),
   `endif
 `else
     .InclUART     ( 1'b0                     ),
