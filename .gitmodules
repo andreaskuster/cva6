@@ -52,6 +52,7 @@
 [submodule "corev_apu/tb/common_verification"]
 	path = corev_apu/tb/common_verification
 	url = https://github.com/pulp-platform/common_verification.git
-[submodule "corev_apu/register_interface"]
+[submodule "ri"]
 	path = corev_apu/register_interface
 	url = https://github.com/andreaskuster/register_interface.git
+
