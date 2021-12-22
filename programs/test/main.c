@@ -34,8 +34,7 @@
 #define DMA_NEXTID_ADDR   (DMA_BASE + DMA_FRONTEND_NEXT_ID_REG_OFFSET)
 #define DMA_DONE_ADDR     (DMA_BASE + DMA_FRONTEND_DONE_REG_OFFSET)
 
-#define DMA_TRANSFER_SIZE (4 * 1024) // 4KB, i.e. page size
-#define DMA_TRANSFER_ID 7 // arbitrary id
+#define DMA_TRANSFER_SIZE (8*8) //(4 * 1024) // 4KB, i.e. page size
 #define DMA_CONF_DECOUPLE 0
 #define DMA_CONF_DEBURST 0
 #define DMA_CONF_SERIALIZE 0
@@ -87,15 +86,15 @@ int main(int argc, char const *argv[]) {
     // print_uart("\n");
     // ASSERT(*dma_src == 42, "");
 
-    *dma_src = 42;
-    *dma_dst = 42;
-    *dma_num_bytes = 42;
-    *dma_conf = 7;   // 0b111
+    // *dma_src = 42;
+    // *dma_dst = 42;
+    // *dma_num_bytes = 0;
+    // *dma_conf = 7;   // 0b111
 
-    ASSERT(*dma_src == 42, "dma_src");
-    ASSERT(*dma_dst == 42, "dma_dst");
-    ASSERT(*dma_num_bytes == 42, "dma_num_bytes");
-    ASSERT(*dma_conf == 7, "dma_conf");
+    // ASSERT(*dma_src == 42, "dma_src");
+    // ASSERT(*dma_dst == 42, "dma_dst");
+    // ASSERT(*dma_num_bytes == 0, "dma_num_bytes");
+    // ASSERT(*dma_conf == 7, "dma_conf");
 
     /*
      * Test DMA transfer
@@ -120,18 +119,37 @@ int main(int argc, char const *argv[]) {
     *dma_num_bytes = DMA_TRANSFER_SIZE;
     *dma_conf = (DMA_CONF_DECOUPLE << DMA_FRONTEND_CONF_DECOUPLE_BIT) | (DMA_CONF_DEBURST << DMA_FRONTEND_CONF_DEBURST_BIT) | (DMA_CONF_SERIALIZE << DMA_FRONTEND_CONF_SERIALIZE_BIT);
 
-    print_uart("done\n");
+    print_uart("start transfer\n");
 
+    // launch transfer: read id
+    //uint64_t transfer_id  = 0;
 
-    // // launch transfer
-    // *dma_nextid = DMA_TRANSFER_ID;
+    //for(int i = 0;3 > i; i++){
+        uint64_t transfer_id = *dma_nextid; // = DMA_TRANSFER_ID;
+        print_uart("transfer_id:");
+        print_uart_int(transfer_id);
+        print_uart("\n");
+    //}
     // if(*dma_nextid == 0){ // check for error
     //     printf("DMA transfer setup failed, exit\n");
     //     return -1;
     // }
+    //    print_uart("done\n");
 
-    // // poll wait for transfer to finish
-    // while(*dma_done != DMA_TRANSFER_ID){};
+    //while(1);
+
+    // poll wait for transfer to finish
+    while(*dma_done != transfer_id){
+        print_uart("transfer_id: ");
+        print_uart_int(*dma_done);        
+        print_uart(" dst: ");
+        print_uart_int(dst[0]);
+        print_uart("\n");
+
+    };
+
+    print_uart("done\n");
+
 
     // // check result
     // // TODO: invalidate cache?
