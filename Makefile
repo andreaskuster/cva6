@@ -19,7 +19,7 @@ test_case      ?= core_test
 
 # TODO: change/catch globally
 
-qsim = questa-2021.2
+qsim = questa-2020.1
 
 VLOG = $(qsim) vlog
 VSIM = $(qsim) vsim
@@ -248,8 +248,12 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
 		idma/src/frontends/cva6/dma_frontend_reg_pkg.sv \
 		idma/src/frontends/cva6/dma_frontend_reg_top.sv \
 		idma/src/frontends/cva6/dma_frontend.sv \
-		idma/src/frontends/cva6/dma_core_wrap.sv #\
-		idma/src/frontends/cva6/ \
+		idma/src/frontends/cva6/dma_core_wrap.sv \
+		idma/src/axi_dma_data_path.sv \
+		idma/src/axi_dma_data_mover.sv \
+		idma/src/axi_dma_burst_reshaper.sv \
+		idma/src/axi_dma_backend.sv \
+		idma/src/frontends/pulpopen/cluster_dma_transfer_id_gen.sv #\
 		idma/src/frontends/cva6/ \
 		idma/src/frontends/cva6/ \
 		idma/src/frontends/cva6/ \
