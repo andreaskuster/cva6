@@ -34,7 +34,8 @@
 #define DMA_NEXTID_ADDR   (DMA_BASE + DMA_FRONTEND_NEXT_ID_REG_OFFSET)
 #define DMA_DONE_ADDR     (DMA_BASE + DMA_FRONTEND_DONE_REG_OFFSET)
 
-#define DMA_TRANSFER_SIZE (8*8) //(4 * 1024) // 4KB, i.e. page size
+#define DMA_TRANSFER_SIZE (8*2) //(4 * 1024) // 4KB, i.e. page size
+
 #define DMA_CONF_DECOUPLE 0
 #define DMA_CONF_DEBURST 0
 #define DMA_CONF_SERIALIZE 0
@@ -125,10 +126,15 @@ int main(int argc, char const *argv[]) {
     //uint64_t transfer_id  = 0;
 
     //for(int i = 0;3 > i; i++){
-        uint64_t transfer_id = *dma_nextid; // = DMA_TRANSFER_ID;
-        print_uart("transfer_id:");
-        print_uart_int(transfer_id);
-        print_uart("\n");
+    uint64_t transfer_id = *dma_nextid; // = DMA_TRANSFER_ID;
+
+    // add delay to free axi bus
+    volatile int test = 2;
+    for(int i = 0; DMA_TRANSFER_SIZE > i; i++){test *= 4;}
+
+    print_uart("transfer_id:");
+    print_uart_int(transfer_id);
+    print_uart("\n");
     //}
     // if(*dma_nextid == 0){ // check for error
     //     printf("DMA transfer setup failed, exit\n");
@@ -141,32 +147,33 @@ int main(int argc, char const *argv[]) {
     // poll wait for transfer to finish
     while(*dma_done != transfer_id){
         print_uart("transfer_id: ");
+        print_uart_int(transfer_id);         
+        print_uart(" done_id: ");
         print_uart_int(*dma_done);        
         print_uart(" dst: ");
         print_uart_int(dst[0]);
         print_uart("\n");
-
     };
 
-    print_uart("done\n");
 
 
-    // // check result
-    // // TODO: invalidate cache?
-    // for(size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++){
-    //     ASSERT(dst[i] == 42, "dst");
-    // }
-    // printf("Transfer has been successful\n");
+    // check result
+    // TODO: invalidate cache?
+    for(size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++){
+        ASSERT(dst[i] == 42, "dst");
+    }
+    print_uart("Transfer has been successful\n");
 
     // // free allocated memory
     // free(src);
     // free(dst);
     
+    print_uart("done\n");
 
 
-    // while (1){
-    //     // do nothing
-    // }
+    while (1){
+        // do nothing
+    }
 
     return 0;
 }
