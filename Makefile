@@ -97,14 +97,14 @@ ariane_pkg += core/include/riscv_pkg.sv                              \
               core/include/wt_cache_pkg.sv                           \
               corev_apu/axi/src/axi_pkg.sv                           \
               corev_apu/register_interface/src/reg_intf.sv           \
-			  corev_apu/register_interface/src/reg_intf_pkg.sv       \
               core/include/axi_intf.sv                               \
               corev_apu/tb/rvfi_pkg.sv                               \
               corev_apu/tb/ariane_soc_pkg.sv                         \
               corev_apu/tb/ariane_axi_soc_pkg.sv                     \
               core/include/ariane_axi_pkg.sv                         \
               core/fpu/src/fpnew_pkg.sv                              \
-              core/fpu/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv
+              core/fpu/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv #\
+			  corev_apu/register_interface/src/reg_intf_pkg.sv       \
 
 ariane_pkg := $(addprefix $(root-dir), $(ariane_pkg))
 
@@ -201,7 +201,14 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
         common/local/util/axi_slave_connect.sv                                       \
         common/local/util/axi_master_connect_rev.sv                                  \
         common/local/util/axi_slave_connect_rev.sv                                   \
-        corev_apu/axi/src/axi_cut.sv                                                 \
+        common/submodules/common_cells/src/id_queue.sv \
+        common/submodules/common_cells/src/onehot_to_bin.sv \
+        common/submodules/common_cells/src/stream_register.sv \
+	    corev_apu/axi/src/axi_demux.sv \
+	    corev_apu/axi/src/axi_err_slv.sv \
+        corev_apu/axi/src/axi_atop_filter.sv \
+		corev_apu/axi/src/axi_burst_splitter.sv \
+		corev_apu/axi/src/axi_cut.sv                                                 \
         corev_apu/axi/src/axi_join.sv                                                \
         corev_apu/axi/src/axi_delayer.sv                                             \
         corev_apu/axi/src/axi_to_axi_lite.sv                                         \
@@ -307,7 +314,7 @@ compile_flag_vhd += -64 -nologo -quiet -2008
 
 # Iterate over all include directories and write them with +incdir+ prefixed
 # +incdir+ works for Verilator and QuestaSim
-list_incdir := $(foreach dir, ${incdir}, +incdir+$(dir))
+list_incdir := $(foreach dir, ${incdir}, +incdir+$(dir)) +incdir+corev_apu/axi/include  +incdir+corev_apu/register_interface/include
 
 # RISCV torture setup
 riscv-torture-dir    := tmp/riscv-torture
@@ -396,7 +403,7 @@ generate-trace-vsim:
 	make generate-trace
 
 sim: build
-	$(VSIM) +permissive $(questa-flags) $(questa-cmd) -lib $(library) +MAX_CYCLES=$(max_cycles) +UVM_TESTNAME=$(test_case) \
+	$(VSIM)  +permissive $(questa-flags) $(questa-cmd) -lib $(library) +MAX_CYCLES=$(max_cycles) +UVM_TESTNAME=$(test_case) \
 	+BASEDIR=$(riscv-test-dir) $(uvm-flags) $(QUESTASIM_FLAGS) -gblso $(SPIKE_ROOT)/lib/libfesvr.so -sv_lib $(dpi-library)/ariane_dpi  \
 	${top_level}_optimized +permissive-off ++$(elf-bin) ++$(target-options) | tee sim.log
 
