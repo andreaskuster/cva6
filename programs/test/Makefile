@@ -4,7 +4,7 @@ CC = ${CROSSCOMPILE}gcc
 PYTHON=python
 
 ifeq ($(XLEN), 64)
-CFLAGS = -O0 -ggdb -march=rv64imac -mabi=lp64 -Wall -mcmodel=medany -mexplicit-relocs
+CFLAGS = -O0 -ggdb -g -march=rv64imac -mabi=lp64 -Wall -mcmodel=medany -mexplicit-relocs
 else
 CFLAGS = -O0 -ggdb  -march=rv32im -mabi=ilp32 -W -Wall -mcmodel=medany -mexplicit-relocs -fno-builtin
 endif
@@ -14,7 +14,7 @@ LDFLAGS = -nostdlib -nodefaultlibs -nostartfiles -e _prog_start
 
 INCLUDES = -I./ -I./src
 
-SRCS_C = main.c uart.c
+SRCS_C = main.c uart.c pmp.c
 SRCS_ASM = startup.S
 OBJS_C = $(SRCS_C:.c=.o)
 OBJS_S = $(SRCS_ASM:.S=.o)

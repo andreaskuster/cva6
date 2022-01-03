@@ -20,6 +20,7 @@
 #include <assert.h>
 
 #include "uart.h"
+#include "pmp.h"
 #include "cva6_idma.h"
 
 
@@ -34,7 +35,7 @@
 #define DMA_NEXTID_ADDR   (DMA_BASE + DMA_FRONTEND_NEXT_ID_REG_OFFSET)
 #define DMA_DONE_ADDR     (DMA_BASE + DMA_FRONTEND_DONE_REG_OFFSET)
 
-#define DMA_TRANSFER_SIZE (8*2) //(4 * 1024) // 4KB, i.e. page size
+#define DMA_TRANSFER_SIZE (2*8) //(4 * 1024) // 4KB, i.e. page size
 
 #define DMA_CONF_DECOUPLE 0
 #define DMA_CONF_DEBURST 0
@@ -42,7 +43,7 @@
 
 #define ASSERT(expr, msg) \
 if (!(expr)) {                              \
-    print_uart("assertion failed"); \
+    print_uart("assertion failed: "); \
     print_uart(msg); \
     print_uart("\n"); \
     while(1);\
@@ -73,6 +74,60 @@ int main(int argc, char const *argv[]) {
     // print_uart("\n");
 
     /*
+     * Prepare data
+     */
+
+    // allocate DMA_TRANSFER_SIZE bytes
+    uint64_t src[DMA_TRANSFER_SIZE / sizeof(uint64_t)];
+    //uint64_t guard[512]; // 4KB guard band
+    uint64_t dst[DMA_TRANSFER_SIZE / sizeof(uint64_t)];
+
+    // fill src array & clear dst array
+    for(size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++){
+        src[i] = 42;
+        dst[i] = 0;
+    }
+
+    /*
+     * PMP: Guard source data
+     */
+
+    // pmpcfg_t pmp0 = {
+    //   .cfg = ,
+    //   .a0 = ,
+    //   .a1 = 
+    // }
+
+//    detect_pmp();
+    detect_granule();
+
+    // try protecting non-cached region instead
+    pmpcfg_t pmp0 = set_pmp_napot((uintptr_t)UART_BASE, 16);
+    //pmpcfg_t pmp0 = set_pmp_range((uintptr_t)UART_BASE, 16);
+    //test_one((uintptr_t)UART_BASE, 4);
+    write_reg_u8(UART_BASE, 'a');
+    read_reg_u8(UART_BASE);
+
+
+    // lock src array region
+    //pmpcfg_t pmp0 = set_pmp_napot((uintptr_t)&src, DMA_TRANSFER_SIZE);
+    //pmpcfg_t pmp0 = set_pmp_range((uintptr_t)&src, DMA_TRANSFER_SIZE);
+    //test_one((uintptr_t)&src, 8);
+
+
+    //pmpcfg_t pmp1 = set_pmp_range(&src, 8);//DMA_TRANSFER_SIZE);
+    //test_one(&src, 8);// DMA_TRANSFER_SIZE);
+    //src[0] = 42;
+    
+    // for(int i = 0; i < 10; i++){
+    //     print_uart("try reading address ");
+    //     print_uart_int(&src[i]);
+    //     print_uart(" value: ");
+    //     print_uart_int(src[i]);
+    //     print_uart("\n");
+    // }
+
+    /*
      * Test register access
      */
     print_uart("Test register read/write\n");
@@ -87,6 +142,7 @@ int main(int argc, char const *argv[]) {
     // print_uart("\n");
     // ASSERT(*dma_src == 42, "");
 
+    // TODO: enable
     // *dma_src = 42;
     // *dma_dst = 42;
     // *dma_num_bytes = 0;
@@ -102,16 +158,6 @@ int main(int argc, char const *argv[]) {
      */
     print_uart("Initiate dma request\n");
 
-    // allocate DMA_TRANSFER_SIZE bytes
-    uint64_t src[DMA_TRANSFER_SIZE / sizeof(uint64_t)];
-    uint64_t dst[DMA_TRANSFER_SIZE / sizeof(uint64_t)];
-
-    // fill src array & clear dst array
-    for(size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++){
-        src[i] = 42;
-        dst[i] = 0;
-    }
-
     // TODO: flush cache?
 
     // setup src to dst memory transfer
@@ -120,7 +166,7 @@ int main(int argc, char const *argv[]) {
     *dma_num_bytes = DMA_TRANSFER_SIZE;
     *dma_conf = (DMA_CONF_DECOUPLE << DMA_FRONTEND_CONF_DECOUPLE_BIT) | (DMA_CONF_DEBURST << DMA_FRONTEND_CONF_DEBURST_BIT) | (DMA_CONF_SERIALIZE << DMA_FRONTEND_CONF_SERIALIZE_BIT);
 
-    print_uart("start transfer\n");
+    print_uart("Start transfer\n");
 
     // launch transfer: read id
     //uint64_t transfer_id  = 0;
@@ -129,46 +175,42 @@ int main(int argc, char const *argv[]) {
     uint64_t transfer_id = *dma_nextid; // = DMA_TRANSFER_ID;
 
     // add delay to free axi bus
-    volatile int test = 2;
-    for(int i = 0; DMA_TRANSFER_SIZE > i; i++){test *= 4;}
-
-    print_uart("transfer_id:");
-    print_uart_int(transfer_id);
-    print_uart("\n");
-    //}
-    // if(*dma_nextid == 0){ // check for error
-    //     printf("DMA transfer setup failed, exit\n");
-    //     return -1;
-    // }
-    //    print_uart("done\n");
-
-    //while(1);
+    int test = 2;
+    for(int i = 0; i < 2*DMA_TRANSFER_SIZE; i++){ test *= 2; }
 
     // poll wait for transfer to finish
-    while(*dma_done != transfer_id){
+    do {
+        print_uart("Transfer finished: ");
         print_uart("transfer_id: ");
         print_uart_int(transfer_id);         
         print_uart(" done_id: ");
         print_uart_int(*dma_done);        
-        print_uart(" dst: ");
+        print_uart(" dst[0]: ");
         print_uart_int(dst[0]);
         print_uart("\n");
-    };
+    } while(*dma_done != transfer_id);
 
-
+    // TODO: invalidate cache?
 
     // check result
-    // TODO: invalidate cache?
     for(size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++){
+        print_uart("try reading: ");
+        print_uart_int(dst[i]);
+        print_uart("\n");       
+        
+        print_uart("try reading: src ");
+        print_uart_int(src[i]);
+        print_uart("\n");       
+
         ASSERT(dst[i] == 42, "dst");
     }
-    print_uart("Transfer has been successful\n");
+    print_uart("Transfer successfully validated.\n");
 
     // // free allocated memory
     // free(src);
     // free(dst);
     
-    print_uart("done\n");
+    print_uart("All done, spin-loop.\n");
 
 
     while (1){
@@ -178,6 +220,8 @@ int main(int argc, char const *argv[]) {
     return 0;
 }
 
-void handle_trap(void){
+void kernelvec();
+
+void kerneltrap(void){
     print_uart("trap\r\n");
 }
