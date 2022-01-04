@@ -107,7 +107,7 @@ pmpcfg_t set_pmp_range(uintptr_t base, uintptr_t range)
 pmpcfg_t set_pmp_napot(uintptr_t base, uintptr_t range)
 {
   pmpcfg_t p;
-  p.cfg = PMP_R | (range > granule ? PMP_NAPOT : PMP_NA4);
+  p.cfg = PMP_W | PMP_R | (range > granule ? PMP_NAPOT : PMP_NA4); // R/W
   p.a0 = 0;
   p.a1 = (base + (range/2 - 1)) >> PMP_SHIFT;
   return set_pmp(p);
