@@ -61,7 +61,6 @@ void detect_granule()
 
 void test_one(uintptr_t addr, uintptr_t size)
 {
-  int value = 0;
   uintptr_t new_mstatus = (read_csr(mstatus) & ~MSTATUS_MPP) | (MSTATUS_MPP & (MSTATUS_MPP >> 1)) | MSTATUS_MPRV;
   switch (size) {
     case 1: asm volatile ("csrrw %0, mstatus, %0; lb x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
@@ -70,6 +69,7 @@ void test_one(uintptr_t addr, uintptr_t size)
 #if __riscv_xlen >= 64
     case 8: asm volatile ("csrrw %0, mstatus, %0; ld x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
     // case 8:
+    //   int value = 0;
     //   asm volatile ("csrrw %0, mstatus, %0;" : "+&r" (new_mstatus) : "r" (addr)); 
     //   asm volatile ("lw %[val], (%1);" : [val]"+&r"(value) : "r" (addr)); 
     //   asm volatile ("csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); 

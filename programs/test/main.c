@@ -46,8 +46,17 @@ if (!(expr)) {                              \
     print_uart("assertion failed: "); \
     print_uart(msg); \
     print_uart("\n"); \
-    while(1);\
-}                                           
+}
+    //while(1);                                    
+
+
+// static inline void sleep_loop(){
+
+//     for(int i = 0; i < 32*DMA_TRANSFER_SIZE; i++){ 
+//         //asm volatile ("ADDI x0, x1, 0" :  : ); // nop operation
+//         asm volatile ("nop" :  : ); // nop operation
+//     }
+// }
 
 int main(int argc, char const *argv[]) {
 
@@ -67,20 +76,20 @@ int main(int argc, char const *argv[]) {
     volatile uint64_t* dma_nextid = (volatile uint64_t*)DMA_NEXTID_ADDR;
     volatile uint64_t* dma_done = (volatile uint64_t*)DMA_DONE_ADDR;
 
-    // [debug] print stack address
-    // char test[] = "asdf";
-    // print_uart("charptr@");
-    // print_uart_addr(&test);
-    // print_uart("\n");
+
 
     /*
      * Prepare data
      */
-
     // allocate DMA_TRANSFER_SIZE bytes
     uint64_t src[DMA_TRANSFER_SIZE / sizeof(uint64_t)];
     //uint64_t guard[512]; // 4KB guard band
     uint64_t dst[DMA_TRANSFER_SIZE / sizeof(uint64_t)];
+
+    // [debug] print stack address
+    print_uart("charptr@");
+    print_uart_addr(&src);
+    print_uart("\n");
 
     // fill src array & clear dst array
     for(size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++){
@@ -101,18 +110,21 @@ int main(int argc, char const *argv[]) {
 //    detect_pmp();
     detect_granule();
 
+/*
     // try protecting non-cached region instead
-    pmpcfg_t pmp0 = set_pmp_napot((uintptr_t)UART_BASE, 16);
-    //pmpcfg_t pmp0 = set_pmp_range((uintptr_t)UART_BASE, 16);
-    //test_one((uintptr_t)UART_BASE, 4);
-    write_reg_u8(UART_BASE, 'a');
-    read_reg_u8(UART_BASE);
+    // pmpcfg_t pmp0 = set_pmp_range((uintptr_t)UART_BASE, 16);
+    pmpcfg_t pmp0 = set_pmp_napot((uintptr_t)UART_BASE, 16);    
+    test_one((uintptr_t)UART_BASE, 4);
+    
+    //write_reg_u8(UART_BASE, 'a');
+    //read_reg_u8(UART_BASE);
+*/
 
-
-    // lock src array region
-    //pmpcfg_t pmp0 = set_pmp_napot((uintptr_t)&src, DMA_TRANSFER_SIZE);
+    // whitelist dst array region
+    pmpcfg_t pmp0 = set_pmp_napot((uintptr_t)&dst, DMA_TRANSFER_SIZE);
     //pmpcfg_t pmp0 = set_pmp_range((uintptr_t)&src, DMA_TRANSFER_SIZE);
-    //test_one((uintptr_t)&src, 8);
+    // test_one((uintptr_t)&dst, 4); // TODO: <- this should work
+    // test_one((uintptr_t)&src, 8); // TODO: <- access violation
 
 
     //pmpcfg_t pmp1 = set_pmp_range(&src, 8);//DMA_TRANSFER_SIZE);
@@ -175,8 +187,12 @@ int main(int argc, char const *argv[]) {
     uint64_t transfer_id = *dma_nextid; // = DMA_TRANSFER_ID;
 
     // add delay to free axi bus
-    int test = 2;
-    for(int i = 0; i < 2*DMA_TRANSFER_SIZE; i++){ test *= 2; }
+    //sleep_loop();
+    for(int i = 0; i < 16*DMA_TRANSFER_SIZE; i++){ 
+        asm volatile ("ADDI x0, x1, 0" :  : ); // nop operation
+        //asm volatile ("nop" :  : ); // nop operation
+    }
+
 
     // poll wait for transfer to finish
     do {
@@ -218,10 +234,4 @@ int main(int argc, char const *argv[]) {
     }
 
     return 0;
-}
-
-void kernelvec();
-
-void kerneltrap(void){
-    print_uart("trap\r\n");
 }
