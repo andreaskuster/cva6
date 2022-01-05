@@ -21,6 +21,7 @@
 
 #include "uart.h"
 #include "pmp.h"
+#include "encoding.h"
 #include "cva6_idma.h"
 
 
@@ -41,11 +42,12 @@
 #define DMA_CONF_DEBURST 0
 #define DMA_CONF_SERIALIZE 0
 
-#define ASSERT(expr, msg) \
-if (!(expr)) {                              \
+#define ASSERT(expr, msg)             \
+if (!(expr)) {                        \
     print_uart("assertion failed: "); \
-    print_uart(msg); \
-    print_uart("\n"); \
+    print_uart(msg);                  \
+    print_uart("\n");                 \
+    return -1;                        \
 }
     //while(1);                                    
 
@@ -72,7 +74,7 @@ int main(int argc, char const *argv[]) {
     volatile uint64_t* dma_dst = (volatile uint64_t*)DMA_DST_ADDR;
     volatile uint64_t* dma_num_bytes = (volatile uint64_t*)DMA_NUMBYTES_ADDR;
     volatile uint64_t* dma_conf = (volatile uint64_t*)DMA_CONF_ADDR;
-    volatile uint64_t* dma_status = (volatile uint64_t*)DMA_STATUS_ADDR;
+    //volatile uint64_t* dma_status = (volatile uint64_t*)DMA_STATUS_ADDR;
     volatile uint64_t* dma_nextid = (volatile uint64_t*)DMA_NEXTID_ADDR;
     volatile uint64_t* dma_done = (volatile uint64_t*)DMA_DONE_ADDR;
 
@@ -87,9 +89,9 @@ int main(int argc, char const *argv[]) {
     uint64_t dst[DMA_TRANSFER_SIZE / sizeof(uint64_t)];
 
     // [debug] print stack address
-    print_uart("charptr@");
-    print_uart_addr(&src);
-    print_uart("\n");
+    // print_uart("charptr@");
+    // print_uart_addr(&src);
+    // print_uart("\n");
 
     // fill src array & clear dst array
     for(size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++){
@@ -109,7 +111,7 @@ int main(int argc, char const *argv[]) {
 
 //    detect_pmp();
     detect_granule();
-
+    set_pmp_zero();
 /*
     // try protecting non-cached region instead
     // pmpcfg_t pmp0 = set_pmp_range((uintptr_t)UART_BASE, 16);
@@ -120,12 +122,23 @@ int main(int argc, char const *argv[]) {
     //read_reg_u8(UART_BASE);
 */
 
+/*
     // whitelist dst array region
     pmpcfg_t pmp0 = set_pmp_napot((uintptr_t)&dst, DMA_TRANSFER_SIZE);
     //pmpcfg_t pmp0 = set_pmp_range((uintptr_t)&src, DMA_TRANSFER_SIZE);
-    // test_one((uintptr_t)&dst, 4); // TODO: <- this should work
-    // test_one((uintptr_t)&src, 8); // TODO: <- access violation
+    test_one((uintptr_t)&dst, 4); // TODO: <- this should work
+    
+    //test_one((uintptr_t)&src, 4); // TODO: <- access violation
+*/
 
+    //set_pmp_napot_access((uintptr_t)&src, DMA_TRANSFER_SIZE, PMP_R | PMP_W | PMP_X);
+    //set_pmp_napot_access((uintptr_t)&src, DMA_TRANSFER_SIZE, PMP_NO_ACCESS, 1);
+    set_pmp_napot_access((uintptr_t)&src, DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 1); // allow src access for testing purpose
+    set_pmp_napot_access((uintptr_t)&dst, DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 2);
+    //test_one((uintptr_t)&dst, 8); // TODO: <- this should work
+    //print_uart("reading dst worked :)\n");
+    //test_one((uintptr_t)&src, 8); // TODO: <- access violation
+    //print_uart("reading src worked :( \n");
 
     //pmpcfg_t pmp1 = set_pmp_range(&src, 8);//DMA_TRANSFER_SIZE);
     //test_one(&src, 8);// DMA_TRANSFER_SIZE);
@@ -210,15 +223,24 @@ int main(int argc, char const *argv[]) {
 
     // check result
     for(size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++){
-        print_uart("try reading: ");
-        print_uart_int(dst[i]);
-        print_uart("\n");       
-        
-        print_uart("try reading: src ");
-        print_uart_int(src[i]);
+
+        uintptr_t dst_val = read_pmp_locked((uintptr_t)&(dst[i]), 8);//dst[i];//;
+        print_uart("Try reading dst: ");
+        print_uart_int(dst_val);
         print_uart("\n");       
 
-        ASSERT(dst[i] == 42, "dst");
+        // uintptr_t src_val = read_pmp_locked((uintptr_t)&(src[i]), 8);//dst[i];//;
+        // print_uart("try reading src: ");
+        // print_uart_int(src_val);
+        // print_uart("\n");          
+
+        // test_one((uintptr_t)&dst, 8); // TODO: <- this should work
+        // print_uart("reading dst worked :)\n");
+        // test_one((uintptr_t)&src, 8); // TODO: <- access violation
+        // print_uart("reading src worked :( \n");
+
+
+        ASSERT(dst_val == 42, "dst");
     }
     print_uart("Transfer successfully validated.\n");
 
@@ -227,8 +249,6 @@ int main(int argc, char const *argv[]) {
     // free(dst);
     
     print_uart("All done, spin-loop.\n");
-
-
     while (1){
         // do nothing
     }

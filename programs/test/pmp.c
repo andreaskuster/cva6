@@ -59,56 +59,139 @@ void detect_granule()
   print_uart("\n");  
 }
 
-void test_one(uintptr_t addr, uintptr_t size)
+uintptr_t read_pmp_locked(uintptr_t addr, uintptr_t size)
 {
   uintptr_t new_mstatus = (read_csr(mstatus) & ~MSTATUS_MPP) | (MSTATUS_MPP & (MSTATUS_MPP >> 1)) | MSTATUS_MPRV;
+  uintptr_t value = 0;
+
   switch (size) {
     case 1: asm volatile ("csrrw %0, mstatus, %0; lb x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
     case 2: asm volatile ("csrrw %0, mstatus, %0; lh x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
     case 4: asm volatile ("csrrw %0, mstatus, %0; lw x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
 #if __riscv_xlen >= 64
-    case 8: asm volatile ("csrrw %0, mstatus, %0; ld x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
-    // case 8:
-    //   int value = 0;
-    //   asm volatile ("csrrw %0, mstatus, %0;" : "+&r" (new_mstatus) : "r" (addr)); 
-    //   asm volatile ("lw %[val], (%1);" : [val]"+&r"(value) : "r" (addr)); 
-    //   asm volatile ("csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); 
-      
-    //   print_uart("value: ");
-    //   print_uart_int(value);
-    //   print_uart("\n"); 
+    // case 8: asm volatile ("csrrw %0, mstatus, %0; ld x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
+    case 8:
+      asm volatile ("csrrw %0, mstatus, %0;" : "+&r" (new_mstatus) : "r" (addr)); 
+      asm volatile ("ld %[val], (%1);" : [val]"+&r"(value) : "r" (addr)); 
+      asm volatile ("csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); 
+      //print_uart("value: ");
+      //print_uart_int(value);
+      //print_uart("\n"); 
       break;
-
 #endif
     default: __builtin_unreachable();
   }
+
+  return value;
+}
+
+// void test_one(uintptr_t addr, uintptr_t size)
+// {
+//   uintptr_t new_mstatus = (read_csr(mstatus) & ~MSTATUS_MPP) | (MSTATUS_MPP & (MSTATUS_MPP >> 1)) | MSTATUS_MPRV;
+//   uintptr_t value = 0;
+
+//   switch (size) {
+//     case 1: asm volatile ("csrrw %0, mstatus, %0; lb x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
+//     case 2: asm volatile ("csrrw %0, mstatus, %0; lh x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
+//     case 4: asm volatile ("csrrw %0, mstatus, %0; lw x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
+// #if __riscv_xlen >= 64
+//     // case 8: asm volatile ("csrrw %0, mstatus, %0; ld x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
+//     case 8:
+//       asm volatile ("csrrw %0, mstatus, %0;" : "+&r" (new_mstatus) : "r" (addr)); 
+//       asm volatile ("ld %[val], (%1);" : [val]"+&r"(value) : "r" (addr)); 
+//       asm volatile ("csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); 
+//       print_uart("value: ");
+//       print_uart_int(value);
+//       print_uart("\n"); 
+//       break;
+// #endif
+//     default: __builtin_unreachable();
+//   }
+// }
+
+
+// pmpcfg_t set_pmp(pmpcfg_t p)
+// {
+//   uintptr_t cfg0 = read_csr(pmpcfg0);
+//   write_csr(pmpcfg0, cfg0 & ~0xff00);
+//   write_csr(pmpaddr0, p.a0);
+//   write_csr(pmpaddr1, p.a1);
+//   write_csr(pmpcfg0, ((p.cfg << 8) & 0xff00) | (cfg0 & ~0xff00));
+//   asm volatile ("sfence.vma" ::: "memory");
+//   return p;
+// }
+
+void set_pmp_zero(){
+  // TODO: not sure why thi
+  write_csr(pmpaddr0, 0);
+  asm volatile ("sfence.vma" ::: "memory");
 }
 
 pmpcfg_t set_pmp(pmpcfg_t p)
 {
+
   uintptr_t cfg0 = read_csr(pmpcfg0);
-  write_csr(pmpcfg0, cfg0 & ~0xff00);
-  write_csr(pmpaddr0, p.a0);
-  write_csr(pmpaddr1, p.a1);
-  write_csr(pmpcfg0, ((p.cfg << 8) & 0xff00) | (cfg0 & ~0xff00));
+
+  uintptr_t mask = (0xff << (8*p.slot));
+
+  write_csr(pmpcfg0, cfg0 & ~mask);
+
+
+  switch(p.slot){
+    case 0:
+      write_csr(pmpaddr0, p.a0);
+      break;
+    case 1:
+      write_csr(pmpaddr1, p.a0);
+      break;
+    case 2:
+      write_csr(pmpaddr2, p.a0);
+      break;
+    case 3:
+      write_csr(pmpaddr3, p.a0);
+      break;
+    case 4:
+      write_csr(pmpaddr4, p.a0);
+      break;
+    case 5:
+      write_csr(pmpaddr5, p.a0);
+      break;
+    case 6:
+      write_csr(pmpaddr6, p.a0);
+      break;
+    case 7:
+      write_csr(pmpaddr7, p.a0);
+      break;
+    default:
+      print_uart("PMP invalid slot!\n"); // TODO: extend to 8 (for 8..15 we need pmpcfg1 !!)
+      break;
+  }
+  
+  
+  write_csr(pmpcfg0, ((p.cfg << (8*p.slot)) & mask) | (cfg0 & ~mask));
+
   asm volatile ("sfence.vma" ::: "memory");
   return p;
 }
 
-pmpcfg_t set_pmp_range(uintptr_t base, uintptr_t range)
-{
-  pmpcfg_t p;
-  p.cfg = PMP_TOR | PMP_R;
-  p.a0 = base >> PMP_SHIFT;
-  p.a1 = (base + range) >> PMP_SHIFT;
-  return set_pmp(p);
+// pmpcfg_t set_pmp_range(uintptr_t base, uintptr_t range)
+// {
+//   pmpcfg_t p;
+//   p.cfg = PMP_TOR | PMP_R;
+//   p.a0 = base >> PMP_SHIFT;
+//   p.a1 = (base + range) >> PMP_SHIFT;
+//   return set_pmp(p);
+// }
+
+pmpcfg_t set_pmp_napot(uintptr_t base, uintptr_t range, uintptr_t slot){
+  return set_pmp_napot_access(base, range, (PMP_W | PMP_R | PMP_X), slot);
 }
 
-pmpcfg_t set_pmp_napot(uintptr_t base, uintptr_t range)
-{
+
+pmpcfg_t set_pmp_napot_access(uintptr_t base, uintptr_t range, uintptr_t access, uintptr_t slot){
   pmpcfg_t p;
-  p.cfg = PMP_W | PMP_R | (range > granule ? PMP_NAPOT : PMP_NA4); // R/W
-  p.a0 = 0;
-  p.a1 = (base + (range/2 - 1)) >> PMP_SHIFT;
+  p.cfg = access | (range > granule ? PMP_NAPOT : PMP_NA4);
+  p.a0 = (base + (range/2 - 1)) >> PMP_SHIFT;
+  p.slot = slot;
   return set_pmp(p);
 }
