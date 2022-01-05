@@ -10,7 +10,7 @@
 //
 // Andreas Kuster <kustera@ethz.ch>
 //
-// Description: Simple DMA engine testing program.
+// Description: Simple iDMA engine / PMP / IO-PMP testing program (DMA attack)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,13 +52,13 @@ if (!(expr)) {                        \
     //while(1);                                    
 
 
-// static inline void sleep_loop(){
+static inline void sleep_loop(){
 
-//     for(int i = 0; i < 32*DMA_TRANSFER_SIZE; i++){ 
-//         //asm volatile ("ADDI x0, x1, 0" :  : ); // nop operation
-//         asm volatile ("nop" :  : ); // nop operation
-//     }
-// }
+    for(int i = 0; i < 16*DMA_TRANSFER_SIZE; i++){ 
+        asm volatile ("ADDI x0, x1, 0" :  : ); // nop operation
+        //asm volatile ("nop" :  : ); // nop operation
+    }
+}
 
 int main(int argc, char const *argv[]) {
 
@@ -199,8 +199,8 @@ int main(int argc, char const *argv[]) {
     //for(int i = 0;3 > i; i++){
     uint64_t transfer_id = *dma_nextid; // = DMA_TRANSFER_ID;
 
-    // add delay to free axi bus
-    //sleep_loop();
+    // work-around: add delay to free axi bus (axi_node does not allow parallel transactions -> need to upgrade axi xbar)
+    // sleep_loop();
     for(int i = 0; i < 16*DMA_TRANSFER_SIZE; i++){ 
         asm volatile ("ADDI x0, x1, 0" :  : ); // nop operation
         //asm volatile ("nop" :  : ); // nop operation
@@ -224,7 +224,7 @@ int main(int argc, char const *argv[]) {
     // check result
     for(size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++){
 
-        uintptr_t dst_val = read_pmp_locked((uintptr_t)&(dst[i]), 8);//dst[i];//;
+        uintptr_t dst_val = read_pmp_locked((uintptr_t)&(dst[i]), 8); //dst[i];//;
         print_uart("Try reading dst: ");
         print_uart_int(dst_val);
         print_uart("\n");       

@@ -96,9 +96,9 @@ ariane_pkg += core/include/riscv_pkg.sv                              \
               core/include/std_cache_pkg.sv                          \
               core/include/wt_cache_pkg.sv                           \
               corev_apu/axi/src/axi_pkg.sv                           \
+              core/include/axi_intf.sv                               \
               corev_apu/register_interface/src/reg_intf.sv           \
 			  corev_apu/register_interface/src/reg_intf_pkg.sv       \
-              core/include/axi_intf.sv                               \
               corev_apu/tb/rvfi_pkg.sv                               \
               corev_apu/tb/ariane_soc_pkg.sv                         \
               corev_apu/tb/ariane_axi_soc_pkg.sv                     \
@@ -297,7 +297,7 @@ riscv-fp-tests            := $(shell xargs printf '\n%s' < $(riscv-fp-tests-list
 riscv-benchmarks          := $(shell xargs printf '\n%s' < $(riscv-benchmarks-list) | cut -b 1-)
 
 # Search here for include files (e.g.: non-standalone components)
-incdir := common/submodules/common_cells/include/
+incdir := common/submodules/common_cells/include/ idma/include/
 
 # Compile and sim flags
 compile_flag     += +cover=bcfst+/dut -incr -64 -nologo -quiet -suppress 13262 -permissive +define+$(defines)
