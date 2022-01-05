@@ -65,18 +65,27 @@ uintptr_t read_pmp_locked(uintptr_t addr, uintptr_t size)
   uintptr_t value = 0;
 
   switch (size) {
-    case 1: asm volatile ("csrrw %0, mstatus, %0; lb x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
-    case 2: asm volatile ("csrrw %0, mstatus, %0; lh x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
-    case 4: asm volatile ("csrrw %0, mstatus, %0; lw x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
+    case 1:
+      asm volatile ("csrrw %0, mstatus, %0;" : "+&r" (new_mstatus) : "r" (addr)); 
+      asm volatile ("lb %[val], (%1);" : [val]"+&r"(value) : "r" (addr)); 
+      asm volatile ("csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); 
+    break;
+    case 2: 
+      asm volatile ("csrrw %0, mstatus, %0;" : "+&r" (new_mstatus) : "r" (addr)); 
+      asm volatile ("lh %[val], (%1);" : [val]"+&r"(value) : "r" (addr)); 
+      asm volatile ("csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); 
+    break;
+    case 4:
+      asm volatile ("csrrw %0, mstatus, %0;" : "+&r" (new_mstatus) : "r" (addr)); 
+      asm volatile ("lw %[val], (%1);" : [val]"+&r"(value) : "r" (addr)); 
+      asm volatile ("csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); 
+    break;
 #if __riscv_xlen >= 64
     // case 8: asm volatile ("csrrw %0, mstatus, %0; ld x0, (%1); csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); break;
     case 8:
       asm volatile ("csrrw %0, mstatus, %0;" : "+&r" (new_mstatus) : "r" (addr)); 
       asm volatile ("ld %[val], (%1);" : [val]"+&r"(value) : "r" (addr)); 
       asm volatile ("csrw mstatus, %0" : "+&r" (new_mstatus) : "r" (addr)); 
-      //print_uart("value: ");
-      //print_uart_int(value);
-      //print_uart("\n"); 
       break;
 #endif
     default: __builtin_unreachable();
@@ -191,7 +200,7 @@ pmpcfg_t set_pmp_napot(uintptr_t base, uintptr_t range, uintptr_t slot){
 pmpcfg_t set_pmp_napot_access(uintptr_t base, uintptr_t range, uintptr_t access, uintptr_t slot){
   pmpcfg_t p;
   p.cfg = access | (range > granule ? PMP_NAPOT : PMP_NA4);
-  p.a0 = (base + (range/2 - 1)) >> PMP_SHIFT;
+  p.a0 = (base + (range / 2 - 1)) >> PMP_SHIFT;
   p.slot = slot;
   return set_pmp(p);
 }
