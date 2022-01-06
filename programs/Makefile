@@ -19,10 +19,8 @@ SRCS_ASM = startup.S
 OBJS_C = $(SRCS_C:.c=.o)
 OBJS_S = $(SRCS_ASM:.S=.o)
 
-MAIN = uarttest.elf
+MAIN = dma_attack.elf
 MAIN_BIN = $(MAIN:.elf=.bin)
-
-#.PHONY: clean
 
 $(MAIN): $(OBJS_C) $(OBJS_S) linker.lds
 	$(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) -Tlinker.lds $(OBJS_S) $(OBJS_C) -o $(MAIN)
