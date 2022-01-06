@@ -51,6 +51,10 @@ if (!(expr)) {                        \
 }
     //while(1);                                    
 
+void mtrap(){
+    print_uart("Trap!\n");
+}
+extern int riscv_mtrap();
 
 static inline void sleep_loop(){
 
@@ -67,6 +71,20 @@ int main(int argc, char const *argv[]) {
     init_uart(50000000, 115200);
     print_uart("Hello CVA6 from iDMA!\n");
     
+
+    // set interrupt function or vector
+    asm volatile ("csrw mtvec, %[reg]" : : [reg] "r" (riscv_mtrap));
+    //asm volatile ("csrr %[reg], mtvec" : [reg] "=r" (mtvec));
+    //stringFormat(txt, 0x100, "mtvec=%x\r\n", mtvec);
+    //uart_write(&uart, txt, 0x100);
+
+    // enable machine mode interrupts
+    asm volatile ("csrs mstatus, 0x8");
+
+    // enable interrupts
+    asm volatile ("csrs mie, 0x8");
+
+
     /*
      * Setup relevant configuration registers
      */
