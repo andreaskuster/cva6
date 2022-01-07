@@ -8,7 +8,7 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 //
-// Andreas Kuster <kustera@ethz.ch>
+// Author: Andreas Kuster <kustera@ethz.ch>
 //
 // Description: Simple iDMA engine / PMP / IO-PMP testing program (DMA attack)
 
@@ -21,6 +21,7 @@
 
 #include "uart.h"
 #include "pmp.h"
+#include "trap.h"
 #include "encoding.h"
 #include "cva6_idma.h"
 
@@ -49,75 +50,6 @@ if (!(expr)) {                        \
     print_uart("\n");                 \
     return -1;                        \
 }
-    //while(1);                                    
-
-
-uintptr_t handle_trap(){
-
-    uintptr_t cause = 0;
-    asm("csrr %0, %1" : "=r"(cause) : "I"(CSR_MCAUSE));
-
-
-    switch(cause){
-        case CAUSE_MISALIGNED_FETCH:
-            print_uart("Trap CAUSE_MISALIGNED_FETCH\n");
-        break;
-        case CAUSE_FETCH_ACCESS:
-            print_uart("Trap CAUSE_FETCH_ACCESS\n");
-            break;
-        case CAUSE_ILLEGAL_INSTRUCTION:
-            print_uart("Trap CAUSE_ILLEGAL_INSTRUCTION\n");
-            break;
-        case CAUSE_BREAKPOINT:
-            print_uart("Trap CAUSE_BREAKPOINT\n");
-            break;
-        case CAUSE_MISALIGNED_LOAD:
-            print_uart("Trap CAUSE_MISALIGNED_LOAD\n");
-            break;
-        case CAUSE_LOAD_ACCESS:
-            print_uart("Trap CAUSE_LOAD_ACCESS\n");
-            break;
-        case CAUSE_MISALIGNED_STORE:
-            print_uart("Trap CAUSE_MISALIGNED_STORE\n");
-            break;
-        case CAUSE_STORE_ACCESS:
-            print_uart("Trap CAUSE_STORE_ACCESS\n");
-            break;
-        case CAUSE_USER_ECALL:
-            print_uart("Trap CAUSE_USER_ECALL\n");
-            break;
-        case CAUSE_SUPERVISOR_ECALL:
-            print_uart("Trap CAUSE_SUPERVISOR_ECALL\n");
-            break;
-        case CAUSE_HYPERVISOR_ECALL:
-            print_uart("Trap CAUSE_HYPERVISOR_ECALL\n");
-            break;
-        case CAUSE_MACHINE_ECALL:
-            print_uart("Trap CAUSE_MACHINE_ECALL\n");
-            break;
-        case CAUSE_FETCH_PAGE_FAULT:
-            print_uart("Trap CAUSE_FETCH_PAGE_FAULT\n");
-            break;
-        case CAUSE_LOAD_PAGE_FAULT:
-            print_uart("Trap CAUSE_LOAD_PAGE_FAULT\n");
-            break;
-        case CAUSE_STORE_PAGE_FAULT:
-            print_uart("Trap CAUSE_STORE_PAGE_FAULT\n");
-            break;
-        default:
-            print_uart("Trap OTHER: ");
-            print_uart_addr(cause);
-            print_uart("\n");
-        break;
-    }
-
-    while (1){
-        // do nothing
-    }
-}
-
-extern int trap_entry();
-
 
 static inline void sleep_loop(){
 
@@ -133,16 +65,10 @@ int main(int argc, char const *argv[]) {
 
     init_uart(50000000, 115200);
     print_uart("Hello CVA6 from iDMA!\n");
-    
 
-    // set interrupt function or vector
-    asm volatile ("csrw mtvec, %[reg]" : : [reg] "r" (trap_entry));
 
-    // enable machine mode interrupts
-    asm volatile ("csrs mstatus, 0x8");
+    setup_trap();
 
-    // enable interrupts
-    asm volatile ("csrs mie, 0x8");
 
 
 //   volatile uint64_t* test = (volatile uint64_t*)0x0;
