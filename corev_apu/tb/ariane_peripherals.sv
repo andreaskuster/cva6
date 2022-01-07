@@ -20,7 +20,7 @@ module ariane_peripherals #(
     parameter bit InclGPIO     =  0,
     parameter bit InclTimer    =  1,
     parameter bit InclDMA      =  1
-) (
+  
     input  logic       clk_i           , // Clock
     input  logic       rst_ni          , // Asynchronous reset active low
     AXI_BUS.Slave      plic            ,
