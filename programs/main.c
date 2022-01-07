@@ -51,10 +51,73 @@ if (!(expr)) {                        \
 }
     //while(1);                                    
 
-void mtrap(){
-    print_uart("Trap!\n");
+
+uintptr_t handle_trap(){
+
+    uintptr_t cause = 0;
+    asm("csrr %0, %1" : "=r"(cause) : "I"(CSR_MCAUSE));
+
+
+    switch(cause){
+        case CAUSE_MISALIGNED_FETCH:
+            print_uart("Trap CAUSE_MISALIGNED_FETCH\n");
+        break;
+        case CAUSE_FETCH_ACCESS:
+            print_uart("Trap CAUSE_FETCH_ACCESS\n");
+            break;
+        case CAUSE_ILLEGAL_INSTRUCTION:
+            print_uart("Trap CAUSE_ILLEGAL_INSTRUCTION\n");
+            break;
+        case CAUSE_BREAKPOINT:
+            print_uart("Trap CAUSE_BREAKPOINT\n");
+            break;
+        case CAUSE_MISALIGNED_LOAD:
+            print_uart("Trap CAUSE_MISALIGNED_LOAD\n");
+            break;
+        case CAUSE_LOAD_ACCESS:
+            print_uart("Trap CAUSE_LOAD_ACCESS\n");
+            break;
+        case CAUSE_MISALIGNED_STORE:
+            print_uart("Trap CAUSE_MISALIGNED_STORE\n");
+            break;
+        case CAUSE_STORE_ACCESS:
+            print_uart("Trap CAUSE_STORE_ACCESS\n");
+            break;
+        case CAUSE_USER_ECALL:
+            print_uart("Trap CAUSE_USER_ECALL\n");
+            break;
+        case CAUSE_SUPERVISOR_ECALL:
+            print_uart("Trap CAUSE_SUPERVISOR_ECALL\n");
+            break;
+        case CAUSE_HYPERVISOR_ECALL:
+            print_uart("Trap CAUSE_HYPERVISOR_ECALL\n");
+            break;
+        case CAUSE_MACHINE_ECALL:
+            print_uart("Trap CAUSE_MACHINE_ECALL\n");
+            break;
+        case CAUSE_FETCH_PAGE_FAULT:
+            print_uart("Trap CAUSE_FETCH_PAGE_FAULT\n");
+            break;
+        case CAUSE_LOAD_PAGE_FAULT:
+            print_uart("Trap CAUSE_LOAD_PAGE_FAULT\n");
+            break;
+        case CAUSE_STORE_PAGE_FAULT:
+            print_uart("Trap CAUSE_STORE_PAGE_FAULT\n");
+            break;
+        default:
+            print_uart("Trap OTHER: ");
+            print_uart_addr(cause);
+            print_uart("\n");
+        break;
+    }
+
+    while (1){
+        // do nothing
+    }
 }
-extern int riscv_mtrap();
+
+extern int trap_entry();
+
 
 static inline void sleep_loop(){
 
@@ -73,10 +136,7 @@ int main(int argc, char const *argv[]) {
     
 
     // set interrupt function or vector
-    asm volatile ("csrw mtvec, %[reg]" : : [reg] "r" (riscv_mtrap));
-    //asm volatile ("csrr %[reg], mtvec" : [reg] "=r" (mtvec));
-    //stringFormat(txt, 0x100, "mtvec=%x\r\n", mtvec);
-    //uart_write(&uart, txt, 0x100);
+    asm volatile ("csrw mtvec, %[reg]" : : [reg] "r" (trap_entry));
 
     // enable machine mode interrupts
     asm volatile ("csrs mstatus, 0x8");
@@ -85,6 +145,9 @@ int main(int argc, char const *argv[]) {
     asm volatile ("csrs mie, 0x8");
 
 
+//   volatile uint64_t* test = (volatile uint64_t*)0x0;
+//   uint64_t asfd = *test;
+//    print_uart_int(asfd);
     /*
      * Setup relevant configuration registers
      */
@@ -152,7 +215,7 @@ int main(int argc, char const *argv[]) {
     //set_pmp_napot_access((uintptr_t)&src, DMA_TRANSFER_SIZE, PMP_R | PMP_W | PMP_X);
     //set_pmp_napot_access((uintptr_t)&src, DMA_TRANSFER_SIZE, PMP_NO_ACCESS, 1);
     set_pmp_napot_access((uintptr_t)&src, DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 1); // allow src access for testing purpose
-    set_pmp_napot_access((uintptr_t)&dst, DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 2);
+    set_pmp_napot_access((uintptr_t)&dst, DMA_TRANSFER_SIZE, PMP_NO_ACCESS, 2); //
     //test_one((uintptr_t)&dst, 8); // TODO: <- this should work
     //print_uart("reading dst worked :)\n");
     //test_one((uintptr_t)&src, 8); // TODO: <- access violation
@@ -220,8 +283,8 @@ int main(int argc, char const *argv[]) {
     // work-around: add delay to free axi bus (axi_node does not allow parallel transactions -> need to upgrade axi xbar)
     // sleep_loop();
     for(int i = 0; i < 16*DMA_TRANSFER_SIZE; i++){ 
-        asm volatile ("ADDI x0, x1, 0" :  : ); // nop operation
-        //asm volatile ("nop" :  : ); // nop operation
+        //asm volatile ("ADDI x0, x1, 0" :  : ); // nop operation
+        asm volatile ("nop" :  : ); // nop operation
     }
 
 

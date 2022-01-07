@@ -14,19 +14,19 @@
 int granule;
 
 
-uintptr_t handle_trap(uintptr_t cause, uintptr_t epc, uintptr_t regs[32])
-{
-  if (cause == CAUSE_ILLEGAL_INSTRUCTION){
-    print_uart("Trap CAUSE_ILLEGAL_INSTRUCTION\n"); // no PMP support
-  }
-
-  if (cause == CAUSE_LOAD_ACCESS) {
-    print_uart("Trap CAUSE_LOAD_ACCESS\n");
-  } else {    
-    print_uart("Trap OTHER \n");
-  }
-  return 0;
-}
+//uintptr_t handle_trap(uintptr_t cause, uintptr_t epc, uintptr_t regs[32])
+//{
+//  if (cause == CAUSE_ILLEGAL_INSTRUCTION){
+//    print_uart("Trap CAUSE_ILLEGAL_INSTRUCTION\n"); // no PMP support
+//  }
+//
+//  if (cause == CAUSE_LOAD_ACCESS) {
+//    print_uart("Trap CAUSE_LOAD_ACCESS\n");
+//  } else {
+//    print_uart("Trap OTHER \n");
+//  }
+//  return 0;
+//}
 
 void detect_pmp(){
 

@@ -10,9 +10,9 @@ _prog_start:
   li sp, 0x81000000
   call main
 
-  .align 4
-  .globl riscv_mtrap
-  .type riscv_mtrap, @function
-riscv_mtrap:
-    j mtrap
+  .align 8
+  .globl trap_entry
+  .type trap_entry, @function
+trap_entry:
+    j handle_trap
     mret
