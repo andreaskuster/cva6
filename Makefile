@@ -197,6 +197,8 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
         common/submodules/common_cells/src/exp_backoff.sv                            \
         common/submodules/common_cells/src/addr_decode.sv                            \
         common/submodules/common_cells/src/stream_register.sv                        \
+        common/submodules/common_cells/src/onehot_to_bin.sv                        \
+        common/submodules/common_cells/src/id_queue.sv                        \
         common/local/util/axi_master_connect.sv                                      \
         common/local/util/axi_slave_connect.sv                                       \
         common/local/util/axi_master_connect_rev.sv                                  \
@@ -204,6 +206,7 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
         corev_apu/axi/src/axi_cut.sv                                                 \
         corev_apu/axi/src/axi_join.sv                                                \
         corev_apu/axi/src/axi_delayer.sv                                             \
+		corev_apu/axi/src/axi_burst_splitter.sv                                      \
         corev_apu/axi/src/axi_to_axi_lite.sv                                         \
 		corev_apu/axi/src/axi_id_prepend.sv                                          \
 		corev_apu/axi/src/axi_atop_filter.sv                                         \
