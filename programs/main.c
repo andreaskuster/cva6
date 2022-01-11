@@ -26,7 +26,6 @@
 #include "cva6_idma.h"
 
 
-//#define DMA_BASE (0x80000000 + 0x20000000) // dummy device dram address
 #define DMA_BASE 0x50000000  // dma
 
 #define DMA_SRC_ADDR      (DMA_BASE + DMA_FRONTEND_SRC_ADDR_REG_OFFSET)
@@ -37,7 +36,7 @@
 #define DMA_NEXTID_ADDR   (DMA_BASE + DMA_FRONTEND_NEXT_ID_REG_OFFSET)
 #define DMA_DONE_ADDR     (DMA_BASE + DMA_FRONTEND_DONE_REG_OFFSET)
 
-#define DMA_TRANSFER_SIZE (2*8) //(4 * 1024) // 4KB, i.e. page size
+#define DMA_TRANSFER_SIZE (2 * sizeof(uint64_t)) // 2 elements
 
 #define DMA_CONF_DECOUPLE 0
 #define DMA_CONF_DEBURST 0
@@ -98,7 +97,7 @@ int main(int argc, char const *argv[]) {
     uint64_t src[DMA_TRANSFER_SIZE / sizeof(uint64_t)];
     if (VERBOSE) {
         // print array stack address
-        print_uart("Source array @0x");
+        print_uart("Source array      @0x");
         print_uart_addr((uint64_t) & src);
         print_uart("\n");
     }
@@ -130,8 +129,14 @@ int main(int argc, char const *argv[]) {
     set_pmp_zero();
     // block access to source array
     set_pmp_napot_access((uintptr_t) & src, DMA_TRANSFER_SIZE, PMP_NO_ACCESS, 1);
+    if (VERBOSE) {
+        print_uart("PMP 1 setup to lock src array.\n");
+    }
     // however, allow access to destination array
     set_pmp_napot_access((uintptr_t) & dst, DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 2);
+    if (VERBOSE) {
+        print_uart("PMP 2 setup to give full r/w/x access to dst array\n");
+    }
 
     /*
      * Test register access
@@ -189,7 +194,7 @@ int main(int argc, char const *argv[]) {
     // check result
     for (size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++) {
 
-        uintptr_t dst_val = read_pmp_locked((uintptr_t) & (dst[i]), 8); //dst[i];//;
+        uintptr_t dst_val = read_pmp_locked((uintptr_t) & (dst[i]), 8); // dst[i];
         print_uart("Try reading dst: 0x");
         print_uart_int(dst_val);
         print_uart("\n");
@@ -197,7 +202,7 @@ int main(int argc, char const *argv[]) {
         ASSERT(dst_val == 42, "dst");
 
         if (TEST_PMP_SRC) {
-            uintptr_t src_val = read_pmp_locked((uintptr_t) & (src[i]), 8); //dst[i];//;
+            uintptr_t src_val = read_pmp_locked((uintptr_t) & (src[i]), 8); // dst[i];
             print_uart("Try reading src: 0x");
             print_uart_int(src_val);
             print_uart("\n");
