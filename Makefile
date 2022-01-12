@@ -6,6 +6,8 @@
 library        ?= work
 # verilator lib
 ver-library    ?= work-ver
+# vcs lib
+vcs-library    ?= work-vcs
 # library for DPI
 dpi-library    ?= work-dpi
 # Top level module to compile
@@ -15,24 +17,19 @@ max_cycles     ?= 10000000
 # Test case to run
 test_case      ?= core_test
 # QuestaSim Version
-# questa_version ?= ${QUESTASIM_VERSION}
-
-# TODO: change/catch globally
-
-qsim = questa-2020.1
-
-VLOG = $(qsim) vlog
-VSIM = $(qsim) vsim
-VOPT = $(qsim) vopt
-VCOM = $(qsim) vcom
-VLIB = $(qsim) vlib
-
+questa_version ?= ${QUESTASIM_VERSION}
+VLOG ?= vlog$(questa_version)
+VSIM ?= vsim$(questa_version)
+VOPT ?= vopt$(questa_version)
+VCOM ?= vcom$(questa_version)
+VLIB ?= vlib$(questa_version)
+VMAP ?= vmap$(questa_version)
 # verilator version
 verilator      ?= verilator
 # traget option
 target-options ?=
 # additional definess
-defines        ?= WT_DCACHE
+defines        ?= WT_DCACHE+RVFI_TRACE
 # test name for torture runs (binary name)
 test-location  ?= output/test
 # set to either nothing or -log
@@ -47,7 +44,7 @@ root-dir := $(dir $(mkfile_path))
 
 support_verilator_4 := $(shell ($(verilator) --version | grep '4\.') > /dev/null 2>&1 ; echo $$?)
 ifeq ($(support_verilator_4), 0)
-	verilator_threads := 2
+	verilator_threads := 1
 endif
 
 ifndef RISCV
@@ -82,29 +79,32 @@ ifdef spike-tandem
     endif
 endif
 
+# target takes one of the following cva6 hardware configuration:
+# cv64a6_imafdc_sv39, cv32a6_imac_sv0, cv32a6_imac_sv32, cv32a6_imafc_sv32
+target     ?= cv64a6_imafdc_sv39
+
 # Sources
 # Package files -> compile first
-ifeq ($(findstring 32, $(variant)),32)
-    ariane_pkg := core/include/cv32a6_imac_sv0_config_pkg.sv
-else
-    ariane_pkg := core/include/cv64a6_imacfd_sv39_config_pkg.sv
-endif
+ariane_pkg := core/include/$(target)_config_pkg.sv
 ariane_pkg += core/include/riscv_pkg.sv                              \
               corev_apu/riscv-dbg/src/dm_pkg.sv                      \
               core/include/ariane_pkg.sv                             \
               core/include/ariane_rvfi_pkg.sv                        \
               core/include/std_cache_pkg.sv                          \
               core/include/wt_cache_pkg.sv                           \
+              core/include/cvxif_pkg.sv                              \
               corev_apu/axi/src/axi_pkg.sv                           \
               core/include/axi_intf.sv                               \
               corev_apu/register_interface/src/reg_intf.sv           \
 			  corev_apu/register_interface/src/reg_intf_pkg.sv       \
+              core/include/axi_intf.sv                               \
               corev_apu/tb/rvfi_pkg.sv                               \
               corev_apu/tb/ariane_soc_pkg.sv                         \
               corev_apu/tb/ariane_axi_soc_pkg.sv                     \
               core/include/ariane_axi_pkg.sv                         \
               core/fpu/src/fpnew_pkg.sv                              \
-              core/fpu/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv
+              core/fpu/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv #\
+			  corev_apu/register_interface/src/reg_intf_pkg.sv       \
 
 ariane_pkg := $(addprefix $(root-dir), $(ariane_pkg))
 
@@ -171,7 +171,6 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
         $(wildcard corev_apu/fpga/src/axi2apb/src/*.sv)                              \
         $(wildcard corev_apu/fpga/src/apb_timer/*.sv)                                \
         $(wildcard corev_apu/fpga/src/axi_slice/src/*.sv)                            \
-        $(wildcard corev_apu/axi_node/src/*.sv)                                      \
         $(wildcard corev_apu/src/axi_riscv_atomics/src/*.sv)                         \
         $(wildcard corev_apu/axi_mem_if/src/*.sv)                                    \
         $(wildcard core/pmp/src/*.sv)                                                \
@@ -189,6 +188,7 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
         corev_apu/riscv-dbg/debug_rom/debug_rom.sv                                   \
         corev_apu/register_interface/src/apb_to_reg.sv                               \
         corev_apu/axi/src/axi_multicut.sv                                            \
+        common/submodules/common_cells/src/cf_math_pkg.sv                            \
         common/submodules/common_cells/src/deprecated/generic_fifo.sv                \
         common/submodules/common_cells/src/deprecated/pulp_sync.sv                   \
         common/submodules/common_cells/src/deprecated/find_first_one.sv              \
@@ -197,19 +197,37 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
         common/submodules/common_cells/src/stream_mux.sv                             \
         common/submodules/common_cells/src/stream_demux.sv                           \
         common/submodules/common_cells/src/exp_backoff.sv                            \
+        common/submodules/common_cells/src/addr_decode.sv                            \
+        common/submodules/common_cells/src/stream_register.sv                        \
+        common/submodules/common_cells/src/onehot_to_bin.sv                        \
+        common/submodules/common_cells/src/id_queue.sv                        \
         common/local/util/axi_master_connect.sv                                      \
         common/local/util/axi_slave_connect.sv                                       \
         common/local/util/axi_master_connect_rev.sv                                  \
         common/local/util/axi_slave_connect_rev.sv                                   \
-        corev_apu/axi/src/axi_cut.sv                                                 \
+        common/submodules/common_cells/src/id_queue.sv \
+        common/submodules/common_cells/src/onehot_to_bin.sv \
+        common/submodules/common_cells/src/stream_register.sv \
+	    corev_apu/axi/src/axi_demux.sv \
+	    corev_apu/axi/src/axi_err_slv.sv \
+        corev_apu/axi/src/axi_atop_filter.sv \
+		corev_apu/axi/src/axi_burst_splitter.sv \
+		corev_apu/axi/src/axi_cut.sv                                                 \
         corev_apu/axi/src/axi_join.sv                                                \
         corev_apu/axi/src/axi_delayer.sv                                             \
+		corev_apu/axi/src/axi_burst_splitter.sv                                      \
         corev_apu/axi/src/axi_to_axi_lite.sv                                         \
+		corev_apu/axi/src/axi_id_prepend.sv                                          \
+		corev_apu/axi/src/axi_atop_filter.sv                                         \
+		corev_apu/axi/src/axi_err_slv.sv                                             \
+		corev_apu/axi/src/axi_mux.sv                                                 \
+		corev_apu/axi/src/axi_demux.sv                                               \
+		corev_apu/axi/src/axi_xbar.sv                                                \
         corev_apu/fpga-support/rtl/SyncSpRamBeNx64.sv                                \
-        common/submodules/common_cells/src/cf_math_pkg.sv                            \
         common/submodules/common_cells/src/unread.sv                                 \
         common/submodules/common_cells/src/sync.sv                                   \
         common/submodules/common_cells/src/cdc_2phase.sv                             \
+        common/submodules/common_cells/src/spill_register_flushable.sv               \
         common/submodules/common_cells/src/spill_register.sv                         \
         common/submodules/common_cells/src/sync_wedge.sv                             \
         common/submodules/common_cells/src/edge_detect.sv                            \
@@ -265,13 +283,17 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
 
 
 # SV32 MMU for CV32, SV39 MMU for CV64
-ifeq ($(findstring 32, $(variant)),32)
+ifeq ($(findstring 32, $(target)),32)
     src += $(wildcard core/mmu_sv32/*.sv)
 else
     src += $(wildcard core/mmu_sv39/*.sv)
 endif
 
 src := $(addprefix $(root-dir), $(src))
+
+copro_src := core/cvxif_example/include/cvxif_instr_pkg.sv \
+             $(wildcard core/cvxif_example/*.sv)
+copro_src := $(addprefix $(root-dir), $(copro_src))
 
 uart_src := $(wildcard corev_apu/fpga/src/apb_uart/src/*.vhd)
 uart_src := $(addprefix $(root-dir), $(uart_src))
@@ -281,6 +303,8 @@ fpga_src := $(addprefix $(root-dir), $(fpga_src))
 
 # look for testbenches
 tbs := corev_apu/tb/ariane_tb.sv corev_apu/tb/ariane_testharness.sv
+tbs := $(addprefix $(root-dir), $(tbs))
+
 # RISCV asm tests and benchmark setup (used for CI)
 # there is a definesd test-list with selected CI tests
 riscv-test-dir            := tmp/riscv-tests/build/isa/
@@ -310,7 +334,7 @@ compile_flag_vhd += -64 -nologo -quiet -2008
 
 # Iterate over all include directories and write them with +incdir+ prefixed
 # +incdir+ works for Verilator and QuestaSim
-list_incdir := $(foreach dir, ${incdir}, +incdir+$(dir))
+list_incdir := $(foreach dir, ${incdir}, +incdir+$(dir)) +incdir+corev_apu/axi/include  +incdir+corev_apu/register_interface/include
 
 # RISCV torture setup
 riscv-torture-dir    := tmp/riscv-torture
@@ -344,16 +368,19 @@ else
 endif
 
 vcs_build: $(dpi-library)/ariane_dpi.so
-	vlogan -full64 -nc -sverilog -ntb_opts uvm-1.2
-	vlogan -full64 -nc -sverilog -ntb_opts uvm-1.2 +define+WT_CACHE +define+RVFI_TRACE $(filter %.sv,$(ariane_pkg)) +incdir+core/include/+$(VCS_HOME)/etc/uvm-1.2/dpi
-	vlogan -full64 -nc -sverilog -ntb_opts uvm-1.2 +define+WT_CACHE +define+RVFI_TRACE $(filter %.sv,$(util)) +incdir+common/local/util+core/include/+src/util/+$(VCS_HOME)/etc/uvm-1.2/dpi
-	vhdlan -full64 $(filter %.vhd,$(uart_src))
-	vlogan -full64 -nc -sverilog -ntb_opts uvm-1.2 -assert svaext +define+WT_CACHE +define+RVFI_TRACE $(filter %.sv,$(src)) +incdir+core/include/+common/submodules/common_cells/include/+common/local/util/+$(VCS_HOME)/etc/uvm-1.2/dpi
-	vlogan -full64 -nc -sverilog -ntb_opts uvm-1.2 $(tbs) +define+RVFI_TRACE
-	vcs -full64 -timescale=1ns/1ns -ntb_opts uvm-1.2 work.ariane_tb
+	mkdir -p $(vcs-library)
+	cd $(vcs-library) &&\
+	vlogan $(if $(VERDI), -kdb,) -full64 -nc -sverilog -ntb_opts uvm-1.2 &&\
+	vlogan $(if $(VERDI), -kdb,) -full64 -nc -sverilog -ntb_opts uvm-1.2 +define+$(defines) $(filter %.sv,$(ariane_pkg)) +incdir+core/include/+$(VCS_HOME)/etc/uvm-1.2/dpi &&\
+	vlogan $(if $(VERDI), -kdb,) -full64 -nc -sverilog -ntb_opts uvm-1.2 +define+$(defines) $(filter %.sv,$(util)) +incdir+../common/local/util+../core/include/+src/util/+$(VCS_HOME)/etc/uvm-1.2/dpi &&\
+	vhdlan $(if $(VERDI), -kdb,) -full64 -nc $(filter %.vhd,$(uart_src)) &&\
+	vlogan $(if $(VERDI), -kdb,) -full64 -nc -sverilog -ntb_opts uvm-1.2 $(filter %.sv,$(copro_src)) &&\
+	vlogan $(if $(VERDI), -kdb,) -full64 -nc -sverilog -ntb_opts uvm-1.2 -assert svaext +define+$(defines) $(filter %.sv,$(src)) +incdir+../core/include/+../common/submodules/common_cells/include/+../common/local/util/+$(VCS_HOME)/etc/uvm-1.2/dpi &&\
+	vlogan $(if $(VERDI), -kdb,) -full64 -nc -sverilog -ntb_opts uvm-1.2 $(tbs) +define+$(defines) &&\
+	vcs $(if $(VERDI), -kdb -debug_access+all -lca,) -full64 -timescale=1ns/1ns -ntb_opts uvm-1.2 work.ariane_tb
 
 vcs: vcs_build
-	./simv +permissive -sv_lib work-dpi/ariane_dpi +permissive-off ++$(elf-bin) | tee vcs.log
+	cd $(vcs-library) && ./simv  $(if $(VERDI), -verdi,) +permissive -sv_lib ../work-dpi/ariane_dpi +PRELOAD=$(elf-bin) +permissive-off ++$(elf-bin)| tee vcs.log
 
 # Build the TB and module using QuestaSim
 build: $(library) $(library)/.build-srcs $(library)/.build-tb $(dpi-library)/ariane_dpi.so
@@ -363,7 +390,7 @@ build: $(library) $(library)/.build-srcs $(library)/.build-tb $(dpi-library)/ari
 # src files
 $(library)/.build-srcs: $(util) $(library)
 	$(VLOG) $(compile_flag) -work $(library) $(filter %.sv,$(ariane_pkg)) $(list_incdir) -suppress 2583
-	# vcom$(questa_version) $(compile_flag_vhd) -work $(library) -pedanticerrors $(filter %.vhd,$(ariane_pkg))
+	# $(VCOM) $(compile_flag_vhd) -work $(library) -pedanticerrors $(filter %.vhd,$(ariane_pkg))
 	$(VLOG) $(compile_flag) -timescale "1ns / 1ns" -work $(library) $(filter %.sv,$(util)) $(list_incdir) -suppress 2583
 	# Suppress message that always_latch may not be checked thoroughly by QuestaSim.
 	$(VCOM) $(compile_flag_vhd) -work $(library) -pedanticerrors $(filter %.vhd,$(uart_src))
@@ -374,7 +401,7 @@ $(library)/.build-srcs: $(util) $(library)
 # build TBs
 $(library)/.build-tb: $(dpi)
 	# Compile top level
-	$(VLOG) $(compile_flag) -timescale "1ns / 1ns" -sv $(tbs) -work $(library)
+	$(VLOG) $(compile_flag) -timescale "1ns / 1ns" -sv $(tbs) -work $(library) $(list_incdir)
 	touch $(library)/.build-tb
 
 $(library):
@@ -399,7 +426,7 @@ generate-trace-vsim:
 	make generate-trace
 
 sim: build
-	$(VSIM) +permissive $(questa-flags) $(questa-cmd) -lib $(library) +MAX_CYCLES=$(max_cycles) +UVM_TESTNAME=$(test_case) \
+	$(VSIM)  +permissive $(questa-flags) $(questa-cmd) -lib $(library) +MAX_CYCLES=$(max_cycles) +UVM_TESTNAME=$(test_case) \
 	+BASEDIR=$(riscv-test-dir) $(uvm-flags) $(QUESTASIM_FLAGS) -gblso $(SPIKE_ROOT)/lib/libfesvr.so -sv_lib $(dpi-library)/ariane_dpi  \
 	${top_level}_optimized +permissive-off ++$(elf-bin) ++$(target-options) | tee sim.log
 
@@ -605,7 +632,8 @@ xrun-ci: xrun-asm-tests xrun-amo-tests xrun-mul-tests xrun-fp-tests xrun-benchma
 verilate_command := $(verilator)                                                                                 \
                     $(filter-out %.vhd, $(ariane_pkg))                                                           \
                     $(filter-out core/fpu_wrap.sv, $(filter-out %.vhd, $(src)))                                  \
-                    +define+$(defines) -DRVFI_TRACE=1                                                            \
+                    $(copro_src)                                                                                 \
+                    +define+$(defines)                                                                           \
                     common/local/util/sram.sv                                                                    \
                     corev_apu/tb/common/mock_uart.sv                                                             \
                     +incdir+corev_apu/axi_node                                                                   \
@@ -787,11 +815,12 @@ fpga_filter += $(addprefix $(root-dir), src/util/instr_trace_item.sv)
 fpga_filter += $(addprefix $(root-dir), common/local/util/instr_tracer_if.sv)
 fpga_filter += $(addprefix $(root-dir), common/local/util/instr_tracer.sv)
 
-fpga: $(ariane_pkg) $(util) $(src) $(fpga_src) $(uart_src)
+fpga: $(ariane_pkg) $(util) $(src) $(fpga_src) $(uart_src) $(copro_src)
 	@echo "[FPGA] Generate sources"
 	@echo read_vhdl        {$(uart_src)}    > corev_apu/fpga/scripts/add_sources.tcl
 	@echo read_verilog -sv {$(ariane_pkg)} >> corev_apu/fpga/scripts/add_sources.tcl
 	@echo read_verilog -sv {$(filter-out $(fpga_filter), $(util))}     >> corev_apu/fpga/scripts/add_sources.tcl
+	@echo read_verilog -sv {$(filter-out $(fpga_filter), $(copro_src))} >> corev_apu/fpga/scripts/add_sources.tcl
 	@echo read_verilog -sv {$(filter-out $(fpga_filter), $(src))} 	   >> corev_apu/fpga/scripts/add_sources.tcl
 	@echo read_verilog -sv {$(fpga_src)}   >> corev_apu/fpga/scripts/add_sources.tcl
 	@echo "[FPGA] Generate Bitstream"
@@ -804,7 +833,7 @@ build-spike:
 
 clean:
 	rm -rf $(riscv-torture-dir)/output/test*
-	rm -rf $(library)/ $(dpi-library)/ $(ver-library)/
+	rm -rf $(library)/ $(dpi-library)/ $(ver-library)/ $(vcs-library)/
 	rm -f tmp/*.ucdb tmp/*.log *.wlf *vstf wlft* *.ucdb
 
 .PHONY:
