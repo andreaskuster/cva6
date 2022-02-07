@@ -253,7 +253,7 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
 		idma/src/axi_dma_data_mover.sv \
 		idma/src/axi_dma_burst_reshaper.sv \
 		idma/src/axi_dma_backend.sv \
-		idma/src/frontends/pulpopen/cluster_dma_transfer_id_gen.sv #\
+		idma/src/dma_transfer_id_gen.sv #\
 		idma/src/frontends/cva6/ \
 		idma/src/frontends/cva6/ \
 		idma/src/frontends/cva6/ \
