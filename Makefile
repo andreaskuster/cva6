@@ -18,9 +18,6 @@ test_case      ?= core_test
 # questa_version ?= ${QUESTASIM_VERSION}
 
 # TODO: change/catch globally
-
-qsim = questa-2020.1
-
 VLOG = $(qsim) vlog
 VSIM = $(qsim) vsim
 VOPT = $(qsim) vopt
