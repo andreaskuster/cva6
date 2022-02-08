@@ -95,7 +95,6 @@ ariane_pkg += core/include/riscv_pkg.sv                              \
               core/include/cvxif_pkg.sv                              \
               corev_apu/axi/src/axi_pkg.sv                           \
               corev_apu/register_interface/src/reg_intf.sv           \
-              corev_apu/register_interface/src/reg_intf_pkg.sv       \
               core/include/axi_intf.sv                               \
               corev_apu/tb/rvfi_pkg.sv                               \
               corev_apu/tb/ariane_soc_pkg.sv                         \
@@ -103,6 +102,7 @@ ariane_pkg += core/include/riscv_pkg.sv                              \
               core/include/ariane_axi_pkg.sv                         \
               core/fpu/src/fpnew_pkg.sv                              \
               core/fpu/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv
+
 ariane_pkg := $(addprefix $(root-dir), $(ariane_pkg))
 
 # utility modules
