@@ -276,8 +276,8 @@ module ariane_testharness #(
     .data_i     ( dm_slave_rdata            )
   );
 
-  `AXI_ASSIGN_FROM_REQ(slave[1], dm_axi_m_req)
-  `AXI_ASSIGN_TO_RESP(dm_axi_m_resp, slave[1])
+  `AXI_ASSIGN_FROM_REQ(slave[ariane_soc::DEBUG], dm_axi_m_req)
+  `AXI_ASSIGN_TO_RESP(dm_axi_m_resp, slave[ariane_soc::DEBUG])
 
   axi_adapter #(
     .DATA_WIDTH            ( AXI_DATA_WIDTH            ),
@@ -472,6 +472,7 @@ module ariane_testharness #(
     '{ idx: ariane_soc::SPI,      start_addr: ariane_soc::SPIBase,      end_addr: ariane_soc::SPIBase + ariane_soc::SPILength           },
     '{ idx: ariane_soc::Ethernet, start_addr: ariane_soc::EthernetBase, end_addr: ariane_soc::EthernetBase + ariane_soc::EthernetLength },
     '{ idx: ariane_soc::GPIO,     start_addr: ariane_soc::GPIOBase,     end_addr: ariane_soc::GPIOBase + ariane_soc::GPIOLength         },
+    '{ idx: ariane_soc::SDMA,     start_addr: ariane_soc::DMABase,      end_addr: ariane_soc::DMABase + ariane_soc::DMALength         },
     '{ idx: ariane_soc::DRAM,     start_addr: ariane_soc::DRAMBase,     end_addr: ariane_soc::DRAMBase + ariane_soc::DRAMLength         }
   };
 
@@ -550,13 +551,14 @@ module ariane_testharness #(
   `ifdef SPIKE_TANDEM
     .InclUART     ( 1'b0                     ),
   `else
-    .InclUART     ( 1'b1                     ),
+    .InclUART     ( 1'b0                     ),
   `endif
 `else
     .InclUART     ( 1'b0                     ),
 `endif
     .InclSPI      ( 1'b0                     ),
-    .InclEthernet ( 1'b0                     )
+    .InclEthernet ( 1'b0                     ),
+    .InclDMA      ( 1'b1                     )
   ) i_ariane_peripherals (
     .clk_i     ( clk_i                        ),
     .rst_ni    ( ndmreset_n                   ),
@@ -565,6 +567,8 @@ module ariane_testharness #(
     .spi       ( master[ariane_soc::SPI]      ),
     .ethernet  ( master[ariane_soc::Ethernet] ),
     .timer     ( master[ariane_soc::Timer]    ),
+    .sdma      ( master[ariane_soc::SDMA]     ),
+    .mdma      ( slave[ariane_soc::MDMA]      ),
     .irq_o     ( irqs                         ),
     .rx_i      ( rx                           ),
     .tx_o      ( tx                           ),
@@ -617,8 +621,8 @@ module ariane_testharness #(
     .axi_resp_i           ( axi_ariane_resp     )
   );
 
-  `AXI_ASSIGN_FROM_REQ(slave[0], axi_ariane_req)
-  `AXI_ASSIGN_TO_RESP(axi_ariane_resp, slave[0])
+  `AXI_ASSIGN_FROM_REQ(slave[ariane_soc::CVA6], axi_ariane_req)
+  `AXI_ASSIGN_TO_RESP(axi_ariane_resp, slave[ariane_soc::CVA6])
 
   // -------------
   // Simulation Helper Functions

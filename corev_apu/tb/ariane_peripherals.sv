@@ -13,12 +13,13 @@ module ariane_peripherals #(
     parameter int AxiAddrWidth = -1,
     parameter int AxiDataWidth = -1,
     parameter int AxiIdWidth   = -1,
-    parameter int AxiUserWidth = 1,
-    parameter bit InclUART     = 1,
-    parameter bit InclSPI      = 0,
-    parameter bit InclEthernet = 0,
-    parameter bit InclGPIO     = 0,
-    parameter bit InclTimer    = 1
+    parameter int AxiUserWidth =  1,
+    parameter bit InclUART     =  1,
+    parameter bit InclSPI      =  0,
+    parameter bit InclEthernet =  0,
+    parameter bit InclGPIO     =  0,
+    parameter bit InclTimer    =  1,
+    parameter bit InclDMA      =  0
 ) (
     input  logic       clk_i           , // Clock
     input  logic       rst_ni          , // Asynchronous reset active low
@@ -27,6 +28,8 @@ module ariane_peripherals #(
     AXI_BUS.Slave      spi             ,
     AXI_BUS.Slave      ethernet        ,
     AXI_BUS.Slave      timer           ,
+    AXI_BUS.Slave      sdma            , // dma control
+    AXI_BUS.Master     mdma            , // dma engine 
     output logic [1:0] irq_o           ,
     // UART
     input  logic       rx_i            ,
@@ -615,4 +618,25 @@ module ariane_peripherals #(
             .irq_o   ( irq_sources[6:3] )
         );
     end
+
+    // 6. DMA Controller 
+    if (InclDMA) begin : gen_dma
+
+        dma_core_wrap
+        #(
+          .AXI_ADDR_WIDTH   ( AxiAddrWidth ),
+          .AXI_DATA_WIDTH   ( AxiDataWidth ),
+          .AXI_USER_WIDTH   ( AxiUserWidth ),
+          .AXI_ID_WIDTH     ( AxiIdWidth   )
+        ) i_dma (
+          .clk_i            ( clk_i         ),
+          .rst_ni           ( rst_ni        ),
+          /// transfer AXI master
+          .axi_master       ( mdma          ),
+          /// control AXI slave
+          .axi_slave        ( sdma          )
+        );
+       
+    end : gen_dma
+
 endmodule

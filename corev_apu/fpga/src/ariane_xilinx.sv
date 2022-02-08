@@ -7,9 +7,10 @@
 // this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
-
-// Description: Xilinx FPGA top-level
+//
 // Author: Florian Zaruba <zarubaf@iis.ee.ethz.ch>
+// Author: Andreas Kuster <kustera@ethz.ch>
+// Description: Xilinx FPGA top-level
 
 module ariane_xilinx (
 `ifdef GENESYSII
@@ -154,11 +155,11 @@ module ariane_xilinx (
 );
 // 24 MByte in 8 byte words
 localparam NumWords = (24 * 1024 * 1024) / 8;
-localparam NBSlave = 2; // debug, ariane
+localparam NBSlave = 3; // debug:0 , cva6: 1, dma: 2
 localparam AxiAddrWidth = 64;
 localparam AxiDataWidth = 64;
 localparam AxiIdWidthMaster = 4;
-localparam AxiIdWidthSlaves = AxiIdWidthMaster + $clog2(NBSlave); // 5
+localparam AxiIdWidthSlaves = AxiIdWidthMaster + $clog2(NBSlave);
 localparam AxiUserWidth = 1;
 
 `AXI_TYPEDEF_ALL(axi_slave,
@@ -273,6 +274,7 @@ assign addr_map = '{
   '{ idx: ariane_soc::SPI,      start_addr: ariane_soc::SPIBase,      end_addr: ariane_soc::SPIBase + ariane_soc::SPILength           },
   '{ idx: ariane_soc::Ethernet, start_addr: ariane_soc::EthernetBase, end_addr: ariane_soc::EthernetBase + ariane_soc::EthernetLength },
   '{ idx: ariane_soc::GPIO,     start_addr: ariane_soc::GPIOBase,     end_addr: ariane_soc::GPIOBase + ariane_soc::GPIOLength         },
+  '{ idx: ariane_soc::SDMA,     start_addr: ariane_soc::DMABase,      end_addr: ariane_soc::DMABase + ariane_soc::DMALength           },
   '{ idx: ariane_soc::DRAM,     start_addr: ariane_soc::DRAMBase,     end_addr: ariane_soc::DRAMBase + ariane_soc::DRAMLength         }
 };
 
@@ -796,6 +798,7 @@ ariane_peripherals #(
     .AxiUserWidth ( AxiUserWidth     ),
     .InclUART     ( 1'b1             ),
     .InclGPIO     ( 1'b1             ),
+    .InclDMA      ( 1'b1             ),
     `ifdef KINTEX7
     .InclSPI      ( 1'b1         ),
     .InclEthernet ( 1'b1         )
@@ -820,6 +823,8 @@ ariane_peripherals #(
     .eth_clk_i    ( eth_clk                      ),
     .ethernet     ( master[ariane_soc::Ethernet] ),
     .timer        ( master[ariane_soc::Timer]    ),
+    .sdma         ( master[ariane_soc::SDMA]     ),
+    .mdma         ( slave[ariane_soc::MDMA]      ),
     .irq_o        ( irq                          ),
     .rx_i         ( rx                           ),
     .tx_o         ( tx                           ),
