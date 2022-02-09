@@ -623,19 +623,29 @@ module ariane_peripherals #(
     // 6. DMA Controller 
     if (InclDMA) begin : gen_dma
 
-        dma_core_wrap
-        #(
-          .AXI_ADDR_WIDTH   ( AxiAddrWidth ),
-          .AXI_DATA_WIDTH   ( AxiDataWidth ),
-          .AXI_USER_WIDTH   ( AxiUserWidth ),
-          .AXI_ID_WIDTH     ( AxiIdWidth   )
+
+        // ariane_axi_soc::req_t  axi_mdma_req;
+        // ariane_axi_soc::resp_t axi_mdma_resp;
+        // ariane_axi_soc::req_slv_t axi_sdma_req;
+        // ariane_axi_soc::resp_slv_t axi_sdma_resp;
+
+        // `AXI_ASSIGN_TO_REQ(axi_mdma_req, mdma)
+        // `AXI_ASSIGN_FROM_RESP(mdma, axi_mdma_resp)
+        // `AXI_ASSIGN_TO_REQ(axi_sdma_req, sdma)
+        // `AXI_ASSIGN_FROM_RESP(sdma, axi_sdma_resp)
+
+        dma_core_wrap #(
+            .AXI_ADDR_WIDTH   ( AxiAddrWidth ),
+            .AXI_DATA_WIDTH   ( AxiDataWidth ),
+            .AXI_ID_WIDTH     ( AxiIdWidth   ),
+            .AXI_USER_WIDTH   ( AxiUserWidth )
         ) i_dma (
-          .clk_i            ( clk_i         ),
-          .rst_ni           ( rst_ni        ),
-          /// transfer AXI master
-          .axi_master       ( mdma          ),
-          /// control AXI slave
-          .axi_slave        ( sdma          )
+            .clk_i            ( clk_i         ),
+            .rst_ni           ( rst_ni        ),
+            /// transfer AXI master
+            .axi_master       ( mdma          ),
+            /// control AXI slave
+            .axi_slave        ( sdma          )
         );
        
     end : gen_dma
