@@ -11,6 +11,10 @@ export_include_dirs:
   - common/submodules/common_cells/include/
   - corev_apu/axi/include/
 
+dependencies:
+  idma: { path: "idma"} # use locally for development
+# idma: { git: "https://iis-git.ee.ethz.ch/bslk/idma.git", rev: "cva6" } # TODO: eventually open-source this
+
 sources:
   - defines:
       WT_DCACHE: 1
@@ -245,4 +249,3 @@ sources:
       - corev_apu/fpga/src/apb_uart/src/slib_clock_div.vhd
       - corev_apu/fpga/src/apb_uart/src/slib_fifo.vhd
       - corev_apu/fpga/src/apb_uart/src/uart_baudgen.vhd
-

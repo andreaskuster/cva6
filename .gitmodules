@@ -7,12 +7,6 @@
 [submodule "common/submodules/common_cells"]
 	path = common/submodules/common_cells
 	url = https://github.com/pulp-platform/common_cells.git
-[submodule "corev_apu/axi"]
-	path = corev_apu/axi
-	url = https://github.com/pulp-platform/axi.git
-[submodule "corev_apu/register_interface"]
-	path = corev_apu/register_interface
-	url = https://github.com/pulp-platform/register_interface.git
 [submodule "corev_apu/fpga/src/apb_uart"]
 	path = corev_apu/fpga/src/apb_uart
 	url = https://github.com/pulp-platform/apb_uart.git
@@ -52,3 +46,9 @@
 [submodule "corev_apu/rv_plic"]
 	path = corev_apu/rv_plic
 	url = https://github.com/andreaskuster/rv_plic.git
+[submodule "corev_apu/register_interface"]
+	path = corev_apu/register_interface
+	url = https://github.com/andreaskuster/register_interface.git
+[submodule "corev_apu/axi"]
+	path = corev_apu/axi
+	url = https://github.com/andreaskuster/axi.git

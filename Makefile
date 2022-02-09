@@ -94,6 +94,7 @@ ariane_pkg += core/include/riscv_pkg.sv                              \
               core/include/wt_cache_pkg.sv                           \
               core/include/cvxif_pkg.sv                              \
               corev_apu/axi/src/axi_pkg.sv                           \
+              core/include/axi_intf.sv                               \
               corev_apu/register_interface/src/reg_intf.sv           \
               core/include/axi_intf.sv                               \
               corev_apu/tb/rvfi_pkg.sv                               \
@@ -104,6 +105,7 @@ ariane_pkg += core/include/riscv_pkg.sv                              \
               core/cvxif_example/include/cvxif_instr_pkg.sv          \
 	         common/submodules/common_cells/src/cf_math_pkg.sv       \
               core/fpu/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv
+
 ariane_pkg := $(addprefix $(root-dir), $(ariane_pkg))
 
 # utility modules
@@ -173,7 +175,7 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
         $(wildcard corev_apu/axi_mem_if/src/*.sv)                                    \
         $(wildcard core/pmp/src/*.sv)                                                \
         $(wildcard core/cvxif_example/*.sv)                                          \
-        corev_apu/rv_plic/rtl/rv_plic_target.sv                                      \
+		corev_apu/rv_plic/rtl/rv_plic_target.sv                                      \
         corev_apu/rv_plic/rtl/rv_plic_gateway.sv                                     \
         corev_apu/rv_plic/rtl/plic_regmap.sv                                         \
         corev_apu/rv_plic/rtl/plic_top.sv                                            \
@@ -208,6 +210,7 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
         corev_apu/axi/src/axi_demux.sv                                               \
         corev_apu/axi/src/axi_xbar.sv                                                \
         corev_apu/fpga-support/rtl/SyncSpRamBeNx64.sv                                \
+        common/submodules/common_cells/src/cf_math_pkg.sv                            \
         common/submodules/common_cells/src/unread.sv                                 \
         common/submodules/common_cells/src/sync.sv                                   \
         common/submodules/common_cells/src/cdc_2phase.sv                             \
@@ -234,12 +237,37 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
         corev_apu/src/tech_cells_generic/src/pulp_clock_gating.sv                    \
         corev_apu/src/tech_cells_generic/src/cluster_clock_inverter.sv               \
         corev_apu/src/tech_cells_generic/src/pulp_clock_mux2.sv                      \
-        corev_apu/tb/ariane_testharness.sv                                           \
+		corev_apu/tb/ariane_testharness.sv                                           \
         corev_apu/tb/ariane_peripherals.sv                                           \
         corev_apu/tb/rvfi_tracer.sv                                                  \
         corev_apu/tb/common/uart.sv                                                  \
         corev_apu/tb/common/SimDTM.sv                                                \
-        corev_apu/tb/common/SimJTAG.sv
+        corev_apu/tb/common/SimJTAG.sv \
+		idma/include/prim_subreg_pkg.sv \
+		idma/include/prim_subreg_arb.sv \
+		idma/include/prim_subreg_ext.sv \
+		idma/include/prim_subreg_shadow.sv \
+		idma/include/prim_subreg.sv \
+		corev_apu/register_interface/src/axi_lite_to_reg.sv \
+		corev_apu/register_interface/src/axi_to_reg.sv \
+		idma/src/frontends/cva6/dma_frontend_reg_pkg.sv \
+		idma/src/frontends/cva6/dma_frontend_reg_top.sv \
+		idma/src/frontends/cva6/dma_frontend.sv \
+		idma/src/frontends/cva6/dma_core_wrap.sv \
+		idma/src/axi_dma_data_path.sv \
+		idma/src/axi_dma_data_mover.sv \
+		idma/src/axi_dma_burst_reshaper.sv \
+		idma/src/axi_dma_backend.sv \
+		idma/src/dma_transfer_id_gen.sv #\
+		idma/src/frontends/cva6/ \
+		idma/src/frontends/cva6/ \
+		idma/src/frontends/cva6/ \
+		idma/src/frontends/cva6/ \
+		corev_apu/register_interface/src/reg_intf_pkg.sv \
+		corev_apu/register_interface/src/axi_to_reg.sv \
+		idma/include/typedef.svh \
+		idma/include/assertions.svh \
+
 
 # SV32 MMU for CV32, SV39 MMU for CV64
 ifeq ($(findstring 32, $(target)),32)
@@ -280,7 +308,10 @@ riscv-fp-tests            := $(shell xargs printf '\n%s' < $(riscv-fp-tests-list
 riscv-benchmarks          := $(shell xargs printf '\n%s' < $(riscv-benchmarks-list) | cut -b 1-)
 
 # Search here for include files (e.g.: non-standalone components)
-incdir := common/submodules/common_cells/include/ corev_apu/axi/include/ corev_apu/register_interface/include/
+incdir := common/submodules/common_cells/include/ \
+          idma/include/ \
+          corev_apu/register_interface/include/ \
+          corev_apu/axi/include/
 
 # Compile and sim flags
 compile_flag     += +cover=bcfst+/dut -incr -64 -nologo -quiet -suppress 13262 -permissive +define+$(defines)

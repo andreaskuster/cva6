@@ -57,13 +57,13 @@ module rvfi_tracer #(
             rvfi_i[i].rd_addr, rvfi_i[i].rd_wdata);
         end else $fwrite(f, "\n");
         if (rvfi_i[i].insn == 32'h00000073) begin
-          $finish(1);
-          $finish(1);
+          //$finish(1);
+          //$finish(1);
         end
       end else if (rvfi_i[i].trap)
         $fwrite(f, "exception : 0x%h\n", pc64);
     end
-    if (cycles > SIM_FINISH) $finish(1);
+    //if (cycles > SIM_FINISH) $finish(1);
   end
 
   always_ff @(posedge clk_i or negedge rst_ni)
