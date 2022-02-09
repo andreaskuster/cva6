@@ -33,16 +33,16 @@ package ariane_soc;
 
   typedef enum int unsigned {
     DRAM     =  0,
-    SDMA     =  1, // dma slave port for configuration of the engine
-    GPIO     =  2,
-    Ethernet =  3,
-    SPI      =  4,
-    Timer    =  5,
-    UART     =  6,
-    PLIC     =  7,
-    CLINT    =  8,
-    ROM      =  9,
-    Debug    =  10
+    //SDMA     =  1, // dma slave port for configuration of the engine
+    GPIO     =  1,//2,
+    Ethernet =  2,//3,
+    SPI      =  3,//4,
+    Timer    =  4,//5,
+    UART     =  5,//6,
+    PLIC     =  6,//7,
+    CLINT    =  7,//8,
+    ROM      =  8,//9,
+    Debug    =  9//10
     } axi_slaves_t; // must be in order from highest address to lowest
 
   localparam NB_PERIPHERALS = Debug + 1;

@@ -31,8 +31,8 @@ module ariane_peripherals #(
     AXI_BUS.Slave      spi             ,
     AXI_BUS.Slave      ethernet        ,
     AXI_BUS.Slave      timer           ,
-    AXI_BUS.Slave      sdma            , // dma control
-    AXI_BUS.Master     mdma            , // dma engine 
+    // AXI_BUS.Slave      sdma            , // dma control
+    AXI_BUS.Master     mdma            , // dma engine
     output logic [1:0] irq_o           ,
     // UART
     input  logic       rx_i            ,
@@ -634,19 +634,19 @@ module ariane_peripherals #(
         // `AXI_ASSIGN_TO_REQ(axi_sdma_req, sdma)
         // `AXI_ASSIGN_FROM_RESP(sdma, axi_sdma_resp)
 
-        dma_core_wrap #(
-            .AXI_ADDR_WIDTH   ( AxiAddrWidth ),
-            .AXI_DATA_WIDTH   ( AxiDataWidth ),
-            .AXI_ID_WIDTH     ( AxiIdWidth   ),
-            .AXI_USER_WIDTH   ( AxiUserWidth )
-        ) i_dma (
-            .clk_i            ( clk_i         ),
-            .rst_ni           ( rst_ni        ),
-            /// transfer AXI master
-            .axi_master       ( mdma          ),
-            /// control AXI slave
-            .axi_slave        ( sdma          )
-        );
+        // dma_core_wrap #(
+        //     .AXI_ADDR_WIDTH   ( AxiAddrWidth ),
+        //     .AXI_DATA_WIDTH   ( AxiDataWidth ),
+        //     .AXI_ID_WIDTH     ( AxiIdWidth   ),
+        //     .AXI_USER_WIDTH   ( AxiUserWidth )
+        // ) i_dma (
+        //     .clk_i            ( clk_i         ),
+        //     .rst_ni           ( rst_ni        ),
+        //     /// transfer AXI master
+        //     .axi_master       ( mdma          ),
+        //     /// control AXI slave
+        //     .axi_slave        ( sdma          )
+        // );
        
     end : gen_dma
 
