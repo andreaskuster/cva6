@@ -8,6 +8,7 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
+`include "axi/assign.svh"
 `include "register_interface/assign.svh"
 `include "register_interface/typedef.svh"
 
@@ -30,6 +31,7 @@ module ariane_peripherals #(
     AXI_BUS.Slave      spi             ,
     AXI_BUS.Slave      ethernet        ,
     AXI_BUS.Slave      timer           ,
+    //AXI_BUS.Slave      newdev          ,
     output logic [1:0] irq_o           ,
     // UART
     input  logic       rx_i            ,
@@ -53,6 +55,50 @@ module ariane_peripherals #(
     input  logic       spi_miso        ,
     output logic       spi_ss
 );
+
+
+
+//   // ------------------------------
+//   // New Dev
+//   // ------------------------------
+
+//   // NewDev not implemented, adding an error slave here
+
+//   ariane_axi_soc::req_slv_t  newdev_req, newdev_split_req;
+//   ariane_axi_soc::resp_slv_t newdev_resp, newdev_split_resp;
+//   `AXI_ASSIGN_TO_REQ(newdev_req, newdev)
+//   `AXI_ASSIGN_FROM_RESP(newdev, newdev_resp)
+
+//     axi_burst_splitter #(
+//         .MaxReadTxns  ( 1 ),
+//         .MaxWriteTxns ( 1 ),
+//         .AddrWidth    ( AxiAddrWidth    ),
+//         .DataWidth    ( AxiDataWidth    ),
+//         .IdWidth      ( ariane_soc::IdWidthSlave      ),
+//         .UserWidth    ( AxiUserWidth    ),
+//         .req_t        ( ariane_axi_soc::req_slv_t       ),
+//         .resp_t       ( ariane_axi_soc::resp_slv_t     )
+//     ) i_axi_burst_splitter (
+//         .clk_i      ( clk_i         ),
+//         .rst_ni     ( ndmreset_n        ),
+//         .slv_req_i  ( newdev_req  ),
+//         .slv_resp_o ( newdev_resp ),
+//         .mst_req_o  ( newdev_split_req  ),
+//         .mst_resp_i ( newdev_split_resp )
+//     );
+
+//   axi_err_slv #(
+//     .AxiIdWidth ( ariane_soc::IdWidthSlave   ),
+//     .req_t      ( ariane_axi_soc::req_slv_t  ),
+//     .resp_t     ( ariane_axi_soc::resp_slv_t )
+//   ) i_newdev_err_slv (
+//     .clk_i      ( clk_i      ),
+//     .rst_ni     ( ndmreset_n ),
+//     .test_i     ( test_en    ),
+//     .slv_req_i  ( newdev_split_req ),
+//     .slv_resp_o ( newdev_split_resp )
+//   );
+
 
     // ---------------
     // 1. PLIC

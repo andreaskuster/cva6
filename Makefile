@@ -191,12 +191,15 @@ src :=  $(filter-out core/ariane_regfile.sv, $(wildcard core/*.sv))             
         common/submodules/common_cells/src/deprecated/pulp_sync.sv                   \
         common/submodules/common_cells/src/deprecated/find_first_one.sv              \
         common/submodules/common_cells/src/rstgen_bypass.sv                          \
+        common/submodules/common_cells/src/onehot_to_bin.sv                                 \
+        common/submodules/common_cells/src/id_queue.sv                                 \
         common/submodules/common_cells/src/rstgen.sv                                 \
         common/submodules/common_cells/src/stream_mux.sv                             \
         common/submodules/common_cells/src/stream_demux.sv                           \
         common/submodules/common_cells/src/exp_backoff.sv                            \
         common/submodules/common_cells/src/addr_decode.sv                            \
         common/submodules/common_cells/src/stream_register.sv                        \
+        corev_apu/axi/src/axi_burst_splitter.sv                                                 \
         corev_apu/axi/src/axi_cut.sv                                                 \
         corev_apu/axi/src/axi_join.sv                                                \
         corev_apu/axi/src/axi_delayer.sv                                             \

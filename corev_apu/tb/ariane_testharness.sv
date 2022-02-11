@@ -367,7 +367,6 @@ module ariane_testharness #(
     .slv_resp_o ( gpio_resp )
   );
 
-
   // ------------------------------
   // Memory + Exclusive Access
   // ------------------------------
@@ -472,6 +471,7 @@ module ariane_testharness #(
     '{ idx: ariane_soc::SPI,      start_addr: ariane_soc::SPIBase,      end_addr: ariane_soc::SPIBase + ariane_soc::SPILength           },
     '{ idx: ariane_soc::Ethernet, start_addr: ariane_soc::EthernetBase, end_addr: ariane_soc::EthernetBase + ariane_soc::EthernetLength },
     '{ idx: ariane_soc::GPIO,     start_addr: ariane_soc::GPIOBase,     end_addr: ariane_soc::GPIOBase + ariane_soc::GPIOLength         },
+    '{ idx: ariane_soc::NewDev,     start_addr: ariane_soc::NewDevBase,     end_addr: ariane_soc::NewDevBase + ariane_soc::NewDevLength         },
     '{ idx: ariane_soc::DRAM,     start_addr: ariane_soc::DRAMBase,     end_addr: ariane_soc::DRAMBase + ariane_soc::DRAMLength         }
   };
 
@@ -544,6 +544,7 @@ module ariane_testharness #(
   ariane_peripherals #(
     .AxiAddrWidth ( AXI_ADDRESS_WIDTH        ),
     .AxiDataWidth ( AXI_DATA_WIDTH           ),
+    .AxiUserWidth ( AXI_USER_WIDTH           ),
     .AxiIdWidth   ( ariane_soc::IdWidthSlave ),
 `ifndef VERILATOR
   // disable UART when using Spike, as we need to rely on the mockuart
@@ -565,6 +566,7 @@ module ariane_testharness #(
     .spi       ( master[ariane_soc::SPI]      ),
     .ethernet  ( master[ariane_soc::Ethernet] ),
     .timer     ( master[ariane_soc::Timer]    ),
+    //.newdev    ( master[ariane_soc::NewDev]   ),
     .irq_o     ( irqs                         ),
     .rx_i      ( rx                           ),
     .tx_o      ( tx                           ),
@@ -584,6 +586,50 @@ module ariane_testharness #(
     .spi_miso  ( ),
     .spi_ss    ( )
   );
+
+
+  // ------------------------------
+  // New Dev
+  // ------------------------------
+
+  // NewDev not implemented, adding an error slave here
+
+  ariane_axi_soc::req_slv_t  newdev_req, newdev_split_req;
+  ariane_axi_soc::resp_slv_t newdev_resp, newdev_split_resp;
+  `AXI_ASSIGN_TO_REQ(newdev_req, master[ariane_soc::NewDev])
+  `AXI_ASSIGN_FROM_RESP(master[ariane_soc::NewDev], newdev_resp)
+
+    axi_burst_splitter #(
+        .MaxReadTxns  ( 1 ),
+        .MaxWriteTxns ( 1 ),
+        .AddrWidth    ( AXI_ADDRESS_WIDTH    ),
+        .DataWidth    ( AXI_DATA_WIDTH    ),
+        .IdWidth      ( ariane_soc::IdWidthSlave      ),
+        .UserWidth    ( AXI_USER_WIDTH    ),
+        .req_t        ( ariane_axi_soc::req_slv_t       ),
+        .resp_t       ( ariane_axi_soc::resp_slv_t     )
+    ) i_axi_burst_splitter (
+        .clk_i      ( clk_i         ),
+        .rst_ni     ( ndmreset_n        ),
+        .slv_req_i  ( newdev_req  ),
+        .slv_resp_o ( newdev_resp ),
+        .mst_req_o  ( newdev_split_req  ),
+        .mst_resp_i ( newdev_split_resp )
+    );
+
+  axi_err_slv #(
+    .AxiIdWidth ( ariane_soc::IdWidthSlave   ),
+    .req_t      ( ariane_axi_soc::req_slv_t  ),
+    .resp_t     ( ariane_axi_soc::resp_slv_t )
+  ) i_newdev_err_slv (
+    .clk_i      ( clk_i      ),
+    .rst_ni     ( ndmreset_n ),
+    .test_i     ( test_en    ),
+    .slv_req_i  ( newdev_split_req ),
+    .slv_resp_o ( newdev_split_resp )
+  );
+
+
 
   uart_bus #(.BAUD_RATE(115200), .PARITY_EN(0)) i_uart_bus (.rx(tx), .tx(rx), .rx_en(1'b1));
 
