@@ -14,6 +14,7 @@
 //              Instantiates an AXI-Bus and memories
 
 `include "axi/assign.svh"
+`include "register_interface/typedef.svh"
 
 module ariane_testharness #(
   parameter int unsigned AXI_USER_WIDTH    = 1,
@@ -472,15 +473,16 @@ module ariane_testharness #(
     '{ idx: ariane_soc::SPI,      start_addr: ariane_soc::SPIBase,      end_addr: ariane_soc::SPIBase + ariane_soc::SPILength           },
     '{ idx: ariane_soc::Ethernet, start_addr: ariane_soc::EthernetBase, end_addr: ariane_soc::EthernetBase + ariane_soc::EthernetLength },
     '{ idx: ariane_soc::GPIO,     start_addr: ariane_soc::GPIOBase,     end_addr: ariane_soc::GPIOBase + ariane_soc::GPIOLength         },
-    // '{ idx: ariane_soc::SDMA,     start_addr: ariane_soc::DMABase,      end_addr: ariane_soc::DMABase + ariane_soc::DMALength           },
+    '{ idx: ariane_soc::SDMA,     start_addr: ariane_soc::DMABase,      end_addr: ariane_soc::DMABase + ariane_soc::DMALength           },
+    '{ idx: ariane_soc::IOPMP,    start_addr: ariane_soc::IOPMPBase,    end_addr: ariane_soc::IOPMPBase + ariane_soc::IOPMPLength       },
     '{ idx: ariane_soc::DRAM,     start_addr: ariane_soc::DRAMBase,     end_addr: ariane_soc::DRAMBase + ariane_soc::DRAMLength         }
   };
 
   localparam axi_pkg::xbar_cfg_t AXI_XBAR_CFG = '{
     NoSlvPorts: ariane_soc::NrSlaves,
     NoMstPorts: ariane_soc::NB_PERIPHERALS,
-    MaxMstTrans: 1, // Probably requires update
-    MaxSlvTrans: 1, // Probably requires update
+    MaxMstTrans: 4, // Probably requires update
+    MaxSlvTrans: 4, // Probably requires update
     FallThrough: 1'b0,
     LatencyMode: axi_pkg::NO_LATENCY,
     AxiIdWidthSlvPorts: ariane_soc::IdWidth,
@@ -546,6 +548,7 @@ module ariane_testharness #(
     .AxiAddrWidth ( AXI_ADDRESS_WIDTH        ),
     .AxiDataWidth ( AXI_DATA_WIDTH           ),
     .AxiIdWidth   ( ariane_soc::IdWidthSlave ),
+    .AxiUserWidth ( AXI_USER_WIDTH           ),
 `ifndef VERILATOR
   // disable UART when using Spike, as we need to rely on the mockuart
   `ifdef SPIKE_TANDEM
@@ -557,8 +560,9 @@ module ariane_testharness #(
     .InclUART     ( 1'b0                     ),
 `endif
     .InclSPI      ( 1'b0                     ),
-    .InclEthernet ( 1'b0                     ),
-    .InclDMA      ( 1'b0                     )
+    .InclEthernet ( 1'b0                     )
+    // .InclDMA      ( 1'b0                     )
+    // .InclIOPMP    ( 1'b0                     )
   ) i_ariane_peripherals (
     .clk_i     ( clk_i                        ),
     .rst_ni    ( ndmreset_n                   ),
@@ -568,7 +572,8 @@ module ariane_testharness #(
     .ethernet  ( master[ariane_soc::Ethernet] ),
     .timer     ( master[ariane_soc::Timer]    ),
     // .sdma      ( master[ariane_soc::SDMA]     ),
-    .mdma      ( slave[ariane_soc::MDMA]      ),
+    // .mdma      ( slave[ariane_soc::MDMA]      ),
+    // .iopmp     ( master[ariane_soc::IOPMP]    ),
     .irq_o     ( irqs                         ),
     .rx_i      ( rx                           ),
     .tx_o      ( tx                           ),
@@ -588,6 +593,179 @@ module ariane_testharness #(
     .spi_miso  ( ),
     .spi_ss    ( )
   );
+
+
+  localparam InclIOPMP = 1'b0;
+  localparam InclDMA = 1'b1;
+
+
+  // ---------------
+  // DMA
+  // ---------------
+  if (InclDMA) begin : gen_dma
+
+    ariane_axi_soc::req_t  axi_mdma_req;
+    ariane_axi_soc::resp_t axi_mdma_rsp;
+    `AXI_ASSIGN_FROM_REQ(slave[ariane_soc::MDMA], axi_mdma_req)
+    `AXI_ASSIGN_TO_RESP(axi_mdma_rsp, slave[ariane_soc::MDMA])
+
+    ariane_axi_soc::req_slv_t axi_sdma_req;
+    ariane_axi_soc::resp_slv_t axi_sdma_rsp;
+    `AXI_ASSIGN_TO_REQ(axi_sdma_req, master[ariane_soc::SDMA])
+    `AXI_ASSIGN_FROM_RESP(master[ariane_soc::SDMA], axi_sdma_rsp)
+
+    dma_core_wrap #(
+        .AXI_ADDR_WIDTH( AXI_ADDRESS_WIDTH   ),
+        .AXI_DATA_WIDTH( AXI_DATA_WIDTH      ),
+        .AXI_ID_WIDTH  ( ariane_soc::IdWidth ), // TODO: check if we need to use slave width?
+        .AXI_USER_WIDTH( AXI_USER_WIDTH      ),
+        // AXI request/response
+        .axi_req_t     ( ariane_axi_soc::req_t      ),
+        .axi_rsp_t     ( ariane_axi_soc::resp_t     ),
+        .axi_req_slv_t ( ariane_axi_soc::req_slv_t  ),
+        .axi_rsp_slv_t ( ariane_axi_soc::resp_slv_t )
+    ) i_dma (
+        .clk_i    ( clk_i        ),
+        .rst_ni   ( ndmreset_n   ),
+        // slave port
+        .slv_req_i( axi_sdma_req ),
+        .slv_rsp_o( axi_sdma_rsp ),
+        // master port
+        .mst_req_o( axi_mdma_req ),
+        .mst_rsp_i( axi_mdma_rsp )
+    );
+
+  end else begin : gen_dma_disabled
+
+    ariane_axi_soc::req_slv_t  dma_req;
+    ariane_axi_soc::resp_slv_t dma_resp;
+    `AXI_ASSIGN_TO_REQ(dma_req, master[ariane_soc::SDMA])
+    `AXI_ASSIGN_FROM_RESP(master[ariane_soc::SDMA], dma_resp)
+
+    axi_err_slv #(
+        .AxiIdWidth ( ariane_soc::IdWidthSlave   ),
+        .req_t      ( ariane_axi_soc::req_slv_t  ),
+        .resp_t     ( ariane_axi_soc::resp_slv_t )
+    ) i_gpio_err_slv (
+        .clk_i      ( clk_i      ),
+        .rst_ni     ( ndmreset_n ),
+        .test_i     ( 1'b0    ),
+        .slv_req_i  ( dma_req ),
+        .slv_resp_o ( dma_resp )
+    );
+
+    assign slave[ariane_soc::MDMA].ar_valid = 1'b0;
+    assign slave[ariane_soc::MDMA].aw_valid = 1'b0;
+    assign slave[ariane_soc::MDMA].w_valid = 1'b0;
+    assign slave[ariane_soc::MDMA].b_ready = 1'b0;
+    assign slave[ariane_soc::MDMA].r_ready = 1'b0;
+
+  end
+
+
+
+  // ---------------
+  // IO-PMP 
+  // ---------------
+  if (InclIOPMP) begin : gen_iopmp
+
+    ariane_axi_soc::req_slv_t  axi_iopmp_cfg_req;
+    ariane_axi_soc::resp_slv_t axi_iopmp_cfg_rsp;
+    `AXI_ASSIGN_TO_REQ(axi_iopmp_cfg_req, master[ariane_soc::IOPMP])
+    `AXI_ASSIGN_FROM_RESP(master[ariane_soc::IOPMP], axi_iopmp_cfg_rsp)
+
+    `REG_BUS_TYPEDEF_ALL(iopmp_reg, logic[AXI_ADDRESS_WIDTH-1:0], logic[AXI_DATA_WIDTH-1:0], logic[(AXI_DATA_WIDTH / 8)-1:0]) // name, addr_t, data_t, strb_t
+    iopmp_reg_req_t reg_iopmp_cfg_req;
+    iopmp_reg_rsp_t reg_iopmp_cfg_rsp;
+    
+    /*
+     * AXI to register bus (for the pmp configuration)
+     */
+    axi_to_reg #(
+        .ADDR_WIDTH( AXI_ADDRESS_WIDTH  ),
+        .DATA_WIDTH( AXI_DATA_WIDTH   ),
+        .ID_WIDTH  ( ariane_soc::IdWidthSlave    ),
+        .USER_WIDTH( AXI_USER_WIDTH  ),
+        
+        .axi_req_t ( ariane_axi_soc::req_slv_t  ),
+        .axi_rsp_t ( ariane_axi_soc::resp_slv_t ),
+
+        .reg_req_t ( iopmp_reg_req_t            ),
+        .reg_rsp_t ( iopmp_reg_rsp_t            )
+
+    ) axi_to_reg0 (
+        .clk_i     ( clk_i             ),
+        .rst_ni    ( ndmreset_n        ),
+        .testmode_i( 1'b0              ),
+        .axi_req_i ( axi_iopmp_cfg_req ),
+        .axi_rsp_o ( axi_iopmp_cfg_rsp ),
+        .reg_req_o ( reg_iopmp_cfg_req ),
+        .reg_rsp_i ( reg_iopmp_cfg_rsp )
+    );
+
+    /*
+     * AXI IO-PMP
+     */
+
+    ariane_axi_soc::req_t  axi_iopmp_in_req, axi_iopmp_out_req;
+    ariane_axi_soc::resp_t axi_iopmp_in_rsp, axi_iopmp_out_rsp;
+    axi_io_pmp #(
+        .ADDR_WIDTH   ( AXI_ADDRESS_WIDTH              ),
+        .DATA_WIDTH   ( AXI_DATA_WIDTH              ),
+        .ID_WIDTH     ( ariane_soc::IdWidth       ),
+        .USER_WIDTH   ( AXI_USER_WIDTH              ),
+        // AXI channel structs
+        .axi_aw_chan_t( ariane_axi_soc::aw_chan_t ),
+        .axi_w_chan_t ( ariane_axi_soc::w_chan_t  ),
+        .axi_b_chan_t ( ariane_axi_soc::b_chan_t  ),
+        .axi_ar_chan_t( ariane_axi_soc::ar_chan_t ),
+        .axi_r_chan_t ( ariane_axi_soc::r_chan_t  ),
+        // AXI request/response
+        .axi_req_t    ( ariane_axi_soc::req_t     ),
+        .axi_rsp_t    ( ariane_axi_soc::resp_t    ),
+        // register interface request/response
+        .reg_req_t    ( iopmp_reg_req_t           ),
+        .reg_rsp_t    ( iopmp_reg_rsp_t           ),
+        // PMP parameters
+        .NR_ENTRIES   ( 16                        )
+    ) axi_io_pmp0 (
+        .clk_i    ( clk_i             ),
+        .rst_ni   ( ndmreset_n        ),
+        // slave port
+        .slv_req_i( axi_iopmp_in_req  ),
+        .slv_rsp_o( axi_iopmp_in_rsp  ),
+        // master port
+        .mst_req_o( axi_iopmp_out_req ),
+        .mst_rsp_i( axi_iopmp_out_rsp ),
+        // configuration port
+        .cfg_req_i( reg_iopmp_cfg_req ),
+        .cfg_rsp_o( reg_iopmp_cfg_rsp )
+    );
+
+  end else begin : gen_iopmp_disabled
+
+    ariane_axi_soc::req_slv_t  iopmp_req;
+    ariane_axi_soc::resp_slv_t iopmp_resp;
+    `AXI_ASSIGN_TO_REQ(iopmp_req, master[ariane_soc::IOPMP])
+    `AXI_ASSIGN_FROM_RESP(master[ariane_soc::IOPMP], iopmp_resp)
+
+    axi_err_slv #(
+        .AxiIdWidth ( ariane_soc::IdWidthSlave   ),
+        .req_t      ( ariane_axi_soc::req_slv_t  ),
+        .resp_t     ( ariane_axi_soc::resp_slv_t )
+    ) i_gpio_err_slv (
+        .clk_i      ( clk_i      ),
+        .rst_ni     ( ndmreset_n ),
+        .test_i     ( 1'b0    ),
+        .slv_req_i  ( iopmp_req ),
+        .slv_resp_o ( iopmp_resp )
+    );
+
+    // TODO: wire them through without IO-PMP
+
+  end
+
+
 
   uart_bus #(.BAUD_RATE(115200), .PARITY_EN(0)) i_uart_bus (.rx(tx), .tx(rx), .rx_en(1'b1));
 

@@ -33,16 +33,17 @@ package ariane_soc;
 
   typedef enum int unsigned {
     DRAM     =  0,
-    //SDMA     =  1, // dma slave port for configuration of the engine
-    GPIO     =  1,//2,
-    Ethernet =  2,//3,
-    SPI      =  3,//4,
-    Timer    =  4,//5,
-    UART     =  5,//6,
-    PLIC     =  6,//7,
-    CLINT    =  7,//8,
-    ROM      =  8,//9,
-    Debug    =  9//10
+    SDMA     =  1, // dma slave port for configuration of the engine
+    IOPMP    =  2, // iopmp configuration
+    GPIO     =  3,
+    Ethernet =  4,
+    SPI      =  5,
+    Timer    =  6,
+    UART     =  7,
+    PLIC     =  8,
+    CLINT    =  9,
+    ROM      =  10,
+    Debug    =  11
     } axi_slaves_t; // must be in order from highest address to lowest
 
   localparam NB_PERIPHERALS = Debug + 1;
@@ -58,6 +59,7 @@ package ariane_soc;
   localparam logic[63:0] EthernetLength = 64'h10000;
   localparam logic[63:0] GPIOLength     = 64'h1000;
   localparam logic[63:0] DMALength      = 64'h1000;
+  localparam logic[63:0] IOPMPLength    = 64'h1000;
   localparam logic[63:0] DRAMLength     = 64'h40000000; // 1GByte of DDR (split between two chips on Genesys2)
   localparam logic[63:0] SRAMLength     = 64'h1800000;  // 24 MByte of SRAM
   // Instantiate AXI protocol checkers
@@ -74,6 +76,7 @@ package ariane_soc;
     EthernetBase = 64'h3000_0000,
     GPIOBase     = 64'h4000_0000,
     DMABase      = 64'h5000_0000,
+    IOPMPBase    = 64'h5001_0000,
     DRAMBase     = 64'h8000_0000
   } soc_bus_start_t;
 
