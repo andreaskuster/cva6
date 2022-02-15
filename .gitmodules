@@ -48,7 +48,7 @@
 	url = https://github.com/andreaskuster/register_interface.git
 [submodule "corev_apu/axi"]
 	path = corev_apu/axi
-	url = https://github.com/andreaskuster/axi.git
+	url = https://github.com/pulp-platform/axi.git
 [submodule "corev_apu/rv_plic"]
 	path = corev_apu/rv_plic
 	url = https://github.com/pulp-platform/rv_plic.git
