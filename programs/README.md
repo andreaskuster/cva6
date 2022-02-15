@@ -14,7 +14,7 @@ Checkout CVA6 and iDMA repo
 # clone cva6 add_dma branch
 git clone https://github.com/andreaskuster/cva6.git
 cd cva6
-git checkout add_dma
+git checkout add_dma_upgrade
 git submodule update --init --recursive
 
 # clone iDMA
@@ -23,14 +23,14 @@ cd idma
 git checkout cva6
 
 # clone io-pmp
-git clone https://github.com/andreaskuster/axi_io_pmp.git
-
-# verilate design
-make verilate
+git clone https://github.com/andreaskuster/axi-io-pmp.git
 ```
 
 Simulate bare-metal application using verilator
 ```bash
+# verilate design
+make verilate
+
 # run simulation
 work-ver/Variane_testharness programs/dma_attack.elf
 ```

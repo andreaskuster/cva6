@@ -96,7 +96,6 @@ ariane_pkg += core/include/riscv_pkg.sv                              \
               corev_apu/axi/src/axi_pkg.sv                           \
               core/include/axi_intf.sv                               \
               corev_apu/register_interface/src/reg_intf.sv           \
-              core/include/axi_intf.sv                               \
               corev_apu/tb/rvfi_pkg.sv                               \
               corev_apu/tb/ariane_soc_pkg.sv                         \
               corev_apu/tb/ariane_axi_soc_pkg.sv                     \
