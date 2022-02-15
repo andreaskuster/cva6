@@ -67,8 +67,8 @@ void detect_granule() {
     }
     granule = 1UL << g;
 
-    // print outcome
-    print_uart("Pmp granule: ");
+    // print result
+    print_uart("PMP granularity: ");
     print_uart_int(granule);
     print_uart("\n");
 }
@@ -119,9 +119,15 @@ pmpcfg_t set_pmp(pmpcfg_t p) {
 
     // write config
     // note: on XLEN=64 the first 8 pmp configs are in pmpcfg0
-    uintptr_t cfg0 = read_csr(pmpcfg0);
-    uintptr_t mask = (0xff << (8 * p.slot));
-    write_csr(pmpcfg0, cfg0 & ~mask);
+    uintptr_t cfg, mask;
+    mask = (0xff << (8 * p.slot));
+    if(p.slot < 8){
+        cfg = read_csr(pmpcfg0);
+        write_csr(pmpcfg0, cfg & ~mask);
+    } else {
+        cfg = read_csr(pmpcfg1);
+        write_csr(pmpcfg1, cfg & ~mask);
+    }
 
     switch (p.slot) {
         case 0:
@@ -148,13 +154,40 @@ pmpcfg_t set_pmp(pmpcfg_t p) {
         case 7:
             write_csr(pmpaddr7, p.a0);
             break;
+        case 8:
+            write_csr(pmpaddr8, p.a0);
+            break;
+        case 9:
+            write_csr(pmpaddr9, p.a0);
+            break;
+        case 10:
+            write_csr(pmpaddr10, p.a0);
+            break;
+        case 11:
+            write_csr(pmpaddr11, p.a0);
+            break;
+        case 12:
+            write_csr(pmpaddr12, p.a0);
+            break;
+        case 13:
+            write_csr(pmpaddr13, p.a0);
+            break;
+        case 14:
+            write_csr(pmpaddr14, p.a0);
+            break;
+        case 15:
+            write_csr(pmpaddr15, p.a0);
+            break;
         default:
             print_uart("PMP invalid slot!\n"); // TODO: extend to 8 (for 8..15 we need pmpcfg1 !!)
             break;
     }
 
-    write_csr(pmpcfg0, ((p.cfg << (8 * p.slot)) & mask) | (cfg0 & ~mask));
-
+    if(p.slot < 8){
+        write_csr(pmpcfg0, ((p.cfg << (8 * p.slot)) & mask) | (cfg & ~mask));
+    } else {
+        write_csr(pmpcfg1, ((p.cfg << (8 * p.slot)) & mask) | (cfg & ~mask));
+    }
     asm volatile ("sfence.vma":: : "memory");
     return p;
 }
@@ -168,6 +201,15 @@ pmpcfg_t set_pmp_napot_access(uintptr_t base, uintptr_t range, uintptr_t access,
     pmpcfg_t p;
     p.cfg = access | (range > granule ? PMP_NAPOT : PMP_NA4);
     p.a0 = (base + (range / 2 - 1)) >> PMP_SHIFT;
+    p.slot = slot;
+    return set_pmp(p);
+}
+
+
+pmpcfg_t set_pmp_allow_all(uintptr_t slot) {
+    pmpcfg_t p;
+    p.cfg = (PMP_W | PMP_R | PMP_X) | PMP_NAPOT;
+    p.a0 = 0xFFFFFFFFFFFFFFFF;
     p.slot = slot;
     return set_pmp(p);
 }

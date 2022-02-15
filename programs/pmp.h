@@ -43,3 +43,5 @@ void set_pmp_zero();
 pmpcfg_t set_pmp_napot(uintptr_t base, uintptr_t range, uintptr_t slot);
 pmpcfg_t set_pmp_napot_access(uintptr_t base, uintptr_t range, uintptr_t access, uintptr_t slot);
 pmpcfg_t set_pmp_range(uintptr_t base, uintptr_t range);
+
+pmpcfg_t set_pmp_allow_all(uintptr_t slot);
