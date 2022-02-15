@@ -37,7 +37,7 @@
 #define DMA_NEXTID_ADDR   (DMA_BASE + DMA_FRONTEND_NEXT_ID_REG_OFFSET)
 #define DMA_DONE_ADDR     (DMA_BASE + DMA_FRONTEND_DONE_REG_OFFSET)
 
-#define DMA_TRANSFER_SIZE (2*8) //(4 * 1024) // 4KB, i.e. page size
+#define DMA_TRANSFER_SIZE (2 * sizeof(uint64_t)) //(4 * 1024) // 4KB, i.e. page size
 
 #define DMA_CONF_DECOUPLE 0
 #define DMA_CONF_DEBURST 0
@@ -87,7 +87,7 @@ int main(int argc, char const *argv[]) {
     volatile uint64_t *dma_dst = (volatile uint64_t *) DMA_DST_ADDR;
     volatile uint64_t *dma_num_bytes = (volatile uint64_t *) DMA_NUMBYTES_ADDR;
     volatile uint64_t *dma_conf = (volatile uint64_t *) DMA_CONF_ADDR;
-    // volatile uint64_t* dma_status = (volatile uint64_t*)DMA_STATUS_ADDR; // not used in current implementation
+    volatile uint64_t* dma_status = (volatile uint64_t*)DMA_STATUS_ADDR; // not used in current implementation
     volatile uint64_t *dma_nextid = (volatile uint64_t *) DMA_NEXTID_ADDR;
     volatile uint64_t *dma_done = (volatile uint64_t *) DMA_DONE_ADDR;
 
@@ -103,8 +103,8 @@ int main(int argc, char const *argv[]) {
         print_uart("\n");
     }
 
-    // 1KB guard
-    char __attribute__((unused)) guard[1 << 10];
+    // 4KB guard
+    char __attribute__((unused)) guard[0x1 << 12];
 
     // allocate destination array
     uint64_t dst[DMA_TRANSFER_SIZE / sizeof(uint64_t)];
@@ -120,6 +120,7 @@ int main(int argc, char const *argv[]) {
         src[i] = 42;
         dst[i] = 0;
     }
+
     // TODO: flush cache?
 
     /*
@@ -128,10 +129,13 @@ int main(int argc, char const *argv[]) {
     detect_pmp();
     detect_granule();
     set_pmp_zero();
+
+    // set_pmp_allow_all(0); // for debugging, should allow access to the complete address space
+
     // block access to source array
-    set_pmp_napot_access((uintptr_t) & src, DMA_TRANSFER_SIZE, PMP_NO_ACCESS, 1);
+    set_pmp_napot_access((uintptr_t) & src, DMA_TRANSFER_SIZE, PMP_NO_ACCESS, 0);
     // however, allow access to destination array
-    set_pmp_napot_access((uintptr_t) & dst, DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 2);
+    set_pmp_napot_access((uintptr_t) & dst, DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 1);
 
     /*
      * Test register access
@@ -167,14 +171,8 @@ int main(int argc, char const *argv[]) {
     // launch transfer: read id
     uint64_t transfer_id = *dma_nextid;
 
-    // work-around: add delay to free axi bus (axi_node does not allow parallel transactions -> need to upgrade axi xbar)
-    for (int i = 0; i < 16 * DMA_TRANSFER_SIZE; i++) {
-        asm volatile ("nop" :  : ); // nop operation
-    }
-
     // poll wait for transfer to finish
     do {
-        print_uart("Transfer finished: ");
         print_uart("transfer_id: ");
         print_uart_int(transfer_id);
         print_uart(" done_id: ");
@@ -184,12 +182,14 @@ int main(int argc, char const *argv[]) {
         print_uart("\n");
     } while (*dma_done != transfer_id);
 
+    print_uart("Transfer finished\n");
+
     // TODO: invalidate cache?
 
     // check result
     for (size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++) {
 
-        uintptr_t dst_val = read_pmp_locked((uintptr_t) & (dst[i]), 8); //dst[i];//;
+        uintptr_t dst_val = read_pmp_locked((uintptr_t) & (dst[i]), 8); // dst[i]
         print_uart("Try reading dst: 0x");
         print_uart_int(dst_val);
         print_uart("\n");
@@ -197,7 +197,7 @@ int main(int argc, char const *argv[]) {
         ASSERT(dst_val == 42, "dst");
 
         if (TEST_PMP_SRC) {
-            uintptr_t src_val = read_pmp_locked((uintptr_t) & (src[i]), 8); //dst[i];//;
+            uintptr_t src_val = read_pmp_locked((uintptr_t) & (src[i]), 8); // dst[i]
             print_uart("Try reading src: 0x");
             print_uart_int(src_val);
             print_uart("\n");
