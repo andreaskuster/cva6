@@ -22,6 +22,9 @@ git clone https://iis-git.ee.ethz.ch/bslk/idma.git
 cd idma
 git checkout cva6
 
+# clone io-pmp
+git clone https://github.com/andreaskuster/axi_io_pmp.git
+
 # verilate design
 make verilate
 ```
