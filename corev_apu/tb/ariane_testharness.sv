@@ -595,19 +595,23 @@ module ariane_testharness #(
   );
 
 
-  localparam InclIOPMP = 1'b0;
-  localparam InclDMA = 1'b1;
+  localparam InclDMA   = 1'b1;
+  localparam InclIOPMP = 1'b1;
 
+  ariane_axi_soc::req_t  axi_iopmp_in_req, axi_iopmp_out_req;
+  ariane_axi_soc::resp_t axi_iopmp_in_rsp, axi_iopmp_out_rsp;
 
-  // ---------------
-  // DMA
-  // ---------------
+  // ----------------------------
+  // Direct Memory Access Engine
+  // ----------------------------
   if (InclDMA) begin : gen_dma
 
-    ariane_axi_soc::req_t  axi_mdma_req;
-    ariane_axi_soc::resp_t axi_mdma_rsp;
-    `AXI_ASSIGN_FROM_REQ(slave[ariane_soc::MDMA], axi_mdma_req)
-    `AXI_ASSIGN_TO_RESP(axi_mdma_rsp, slave[ariane_soc::MDMA])
+    // ariane_axi_soc::req_t  axi_mdma_req;
+    // ariane_axi_soc::resp_t axi_mdma_rsp;
+    // `AXI_ASSIGN_FROM_REQ(slave[ariane_soc::MDMA], axi_mdma_req)
+    // `AXI_ASSIGN_TO_RESP(axi_mdma_rsp, slave[ariane_soc::MDMA])
+    `AXI_ASSIGN_FROM_REQ(slave[ariane_soc::MDMA], axi_iopmp_out_req)
+    `AXI_ASSIGN_TO_RESP(axi_iopmp_out_rsp, slave[ariane_soc::MDMA])
 
     ariane_axi_soc::req_slv_t axi_sdma_req;
     ariane_axi_soc::resp_slv_t axi_sdma_rsp;
@@ -615,10 +619,10 @@ module ariane_testharness #(
     `AXI_ASSIGN_FROM_RESP(master[ariane_soc::SDMA], axi_sdma_rsp)
 
     dma_core_wrap #(
-        .AXI_ADDR_WIDTH( AXI_ADDRESS_WIDTH   ),
-        .AXI_DATA_WIDTH( AXI_DATA_WIDTH      ),
-        .AXI_ID_WIDTH  ( ariane_soc::IdWidth ), // TODO: check if we need to use slave width?
-        .AXI_USER_WIDTH( AXI_USER_WIDTH      ),
+        .AXI_ADDR_WIDTH( AXI_ADDRESS_WIDTH          ),
+        .AXI_DATA_WIDTH( AXI_DATA_WIDTH             ),
+        .AXI_ID_WIDTH  ( ariane_soc::IdWidth        ),
+        .AXI_USER_WIDTH( AXI_USER_WIDTH             ),
         // AXI request/response
         .axi_req_t     ( ariane_axi_soc::req_t      ),
         .axi_rsp_t     ( ariane_axi_soc::resp_t     ),
@@ -631,8 +635,8 @@ module ariane_testharness #(
         .slv_req_i( axi_sdma_req ),
         .slv_rsp_o( axi_sdma_rsp ),
         // master port
-        .mst_req_o( axi_mdma_req ),
-        .mst_rsp_i( axi_mdma_rsp )
+        .mst_req_o( axi_iopmp_in_req ), // axi_mdma_req ),
+        .mst_rsp_i( axi_iopmp_in_rsp )  // axi_mdma_rsp )
     );
 
   end else begin : gen_dma_disabled
@@ -656,17 +660,17 @@ module ariane_testharness #(
 
     assign slave[ariane_soc::MDMA].ar_valid = 1'b0;
     assign slave[ariane_soc::MDMA].aw_valid = 1'b0;
-    assign slave[ariane_soc::MDMA].w_valid = 1'b0;
-    assign slave[ariane_soc::MDMA].b_ready = 1'b0;
-    assign slave[ariane_soc::MDMA].r_ready = 1'b0;
+    assign slave[ariane_soc::MDMA].w_valid  = 1'b0;
+    assign slave[ariane_soc::MDMA].b_ready  = 1'b0;
+    assign slave[ariane_soc::MDMA].r_ready  = 1'b0;
 
   end
 
 
 
-  // ---------------
-  // IO-PMP 
-  // ---------------
+  // ----------------------------------------
+  // Input/Output Physical Memory Protection
+  // ----------------------------------------
   if (InclIOPMP) begin : gen_iopmp
 
     ariane_axi_soc::req_slv_t  axi_iopmp_cfg_req;
@@ -674,22 +678,20 @@ module ariane_testharness #(
     `AXI_ASSIGN_TO_REQ(axi_iopmp_cfg_req, master[ariane_soc::IOPMP])
     `AXI_ASSIGN_FROM_RESP(master[ariane_soc::IOPMP], axi_iopmp_cfg_rsp)
 
-    `REG_BUS_TYPEDEF_ALL(iopmp_reg, logic[AXI_ADDRESS_WIDTH-1:0], logic[AXI_DATA_WIDTH-1:0], logic[(AXI_DATA_WIDTH / 8)-1:0]) // name, addr_t, data_t, strb_t
+    `REG_BUS_TYPEDEF_ALL(iopmp_reg, logic[7:0], logic[AXI_DATA_WIDTH-1:0], logic[(AXI_DATA_WIDTH / 8)-1:0]) // name, addr_t, data_t, strb_t
     iopmp_reg_req_t reg_iopmp_cfg_req;
     iopmp_reg_rsp_t reg_iopmp_cfg_rsp;
     
-    /*
-     * AXI to register bus (for the pmp configuration)
-     */
+    // -------------------
+    // AXI to register bus (for the pmp configuration)
+    // -------------------
     axi_to_reg #(
-        .ADDR_WIDTH( AXI_ADDRESS_WIDTH  ),
-        .DATA_WIDTH( AXI_DATA_WIDTH   ),
-        .ID_WIDTH  ( ariane_soc::IdWidthSlave    ),
-        .USER_WIDTH( AXI_USER_WIDTH  ),
-        
+        .ADDR_WIDTH( AXI_ADDRESS_WIDTH          ),
+        .DATA_WIDTH( AXI_DATA_WIDTH             ),
+        .ID_WIDTH  ( ariane_soc::IdWidthSlave   ),
+        .USER_WIDTH( AXI_USER_WIDTH             ),
         .axi_req_t ( ariane_axi_soc::req_slv_t  ),
         .axi_rsp_t ( ariane_axi_soc::resp_slv_t ),
-
         .reg_req_t ( iopmp_reg_req_t            ),
         .reg_rsp_t ( iopmp_reg_rsp_t            )
 
@@ -703,17 +705,15 @@ module ariane_testharness #(
         .reg_rsp_i ( reg_iopmp_cfg_rsp )
     );
 
-    /*
-     * AXI IO-PMP
-     */
 
-    ariane_axi_soc::req_t  axi_iopmp_in_req, axi_iopmp_out_req;
-    ariane_axi_soc::resp_t axi_iopmp_in_rsp, axi_iopmp_out_rsp;
+    // ------------
+    // AXI IO-PMP
+    // ------------
     axi_io_pmp #(
-        .ADDR_WIDTH   ( AXI_ADDRESS_WIDTH              ),
-        .DATA_WIDTH   ( AXI_DATA_WIDTH              ),
+        .ADDR_WIDTH   ( AXI_ADDRESS_WIDTH         ),
+        .DATA_WIDTH   ( AXI_DATA_WIDTH            ),
         .ID_WIDTH     ( ariane_soc::IdWidth       ),
-        .USER_WIDTH   ( AXI_USER_WIDTH              ),
+        .USER_WIDTH   ( AXI_USER_WIDTH            ),
         // AXI channel structs
         .axi_aw_chan_t( ariane_axi_soc::aw_chan_t ),
         .axi_w_chan_t ( ariane_axi_soc::w_chan_t  ),
@@ -732,11 +732,11 @@ module ariane_testharness #(
         .clk_i    ( clk_i             ),
         .rst_ni   ( ndmreset_n        ),
         // slave port
-        .slv_req_i( axi_iopmp_in_req  ),
-        .slv_rsp_o( axi_iopmp_in_rsp  ),
+        .slv_req_i( axi_iopmp_in_req ),
+        .slv_rsp_o( axi_iopmp_in_rsp ),
         // master port
-        .mst_req_o( axi_iopmp_out_req ),
-        .mst_rsp_i( axi_iopmp_out_rsp ),
+        .mst_req_o( axi_iopmp_out_req  ),
+        .mst_rsp_i( axi_iopmp_out_rsp  ),
         // configuration port
         .cfg_req_i( reg_iopmp_cfg_req ),
         .cfg_rsp_o( reg_iopmp_cfg_rsp )
@@ -744,24 +744,44 @@ module ariane_testharness #(
 
   end else begin : gen_iopmp_disabled
 
-    ariane_axi_soc::req_slv_t  iopmp_req;
-    ariane_axi_soc::resp_slv_t iopmp_resp;
-    `AXI_ASSIGN_TO_REQ(iopmp_req, master[ariane_soc::IOPMP])
-    `AXI_ASSIGN_FROM_RESP(master[ariane_soc::IOPMP], iopmp_resp)
-
+    //
+    // No IO-PMP: respond with error on the config port
+    //
+    ariane_axi_soc::req_slv_t  axi_iopmp_cfg_req;
+    ariane_axi_soc::resp_slv_t axi_iopmp_cfg_rsp;
+    `AXI_ASSIGN_TO_REQ(axi_iopmp_cfg_req, master[ariane_soc::IOPMP])
+    `AXI_ASSIGN_FROM_RESP(master[ariane_soc::IOPMP], axi_iopmp_cfg_rsp)
     axi_err_slv #(
         .AxiIdWidth ( ariane_soc::IdWidthSlave   ),
         .req_t      ( ariane_axi_soc::req_slv_t  ),
         .resp_t     ( ariane_axi_soc::resp_slv_t )
     ) i_gpio_err_slv (
-        .clk_i      ( clk_i      ),
-        .rst_ni     ( ndmreset_n ),
-        .test_i     ( 1'b0    ),
-        .slv_req_i  ( iopmp_req ),
-        .slv_resp_o ( iopmp_resp )
+        .clk_i      ( clk_i             ),
+        .rst_ni     ( ndmreset_n        ),
+        .test_i     ( 1'b0              ),
+        .slv_req_i  ( axi_iopmp_cfg_req ),
+        .slv_resp_o ( axi_iopmp_cfg_rsp )
     );
 
-    // TODO: wire them through without IO-PMP
+    //
+    // No IO-PMP: directly wire the signals
+    //
+    assign axi_iopmp_out_req.aw        = axi_iopmp_in_req.aw;
+    assign axi_iopmp_out_req.aw_valid  = axi_iopmp_in_req.aw_valid;
+    assign axi_iopmp_out_req.w         = axi_iopmp_in_req.w;
+    assign axi_iopmp_out_req.w_valid   = axi_iopmp_in_req.w_valid;
+    assign axi_iopmp_out_req.b_ready   = axi_iopmp_in_req.b_ready;
+    assign axi_iopmp_out_req.ar        = axi_iopmp_in_req.ar;
+    assign axi_iopmp_out_req.ar_valid  = axi_iopmp_in_req.ar_valid;
+    assign axi_iopmp_out_req.r_ready   = axi_iopmp_in_req.r_ready;
+
+    assign axi_iopmp_in_rsp.aw_ready = axi_iopmp_out_rsp.aw_ready;
+    assign axi_iopmp_in_rsp.ar_ready = axi_iopmp_out_rsp.ar_ready;
+    assign axi_iopmp_in_rsp.w_ready  = axi_iopmp_out_rsp.w_ready;
+    assign axi_iopmp_in_rsp.b_valid  = axi_iopmp_out_rsp.b_valid;
+    assign axi_iopmp_in_rsp.b        = axi_iopmp_out_rsp.b;
+    assign axi_iopmp_in_rsp.r_valid  = axi_iopmp_out_rsp.r_valid;
+    assign axi_iopmp_in_rsp.r        = axi_iopmp_out_rsp.r;
 
   end
 

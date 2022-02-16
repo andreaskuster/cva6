@@ -24,9 +24,14 @@
 #include "trap.h"
 #include "encoding.h"
 #include "cva6_idma.h"
+#include "io_pmp.h"
 
 
-//#define DMA_BASE (0x80000000 + 0x20000000) // dummy device dram address
+#define IOPMP_BASE 0x50010000 // io-pmp
+#define IOPMP_ADDR0       (IOPMP_BASE + IO_PMP_PMP_ADDR_0_REG_OFFSET)
+#define IOPMP_CFG0        (IOPMP_BASE + IO_PMP_PMP_CFG_0_REG_OFFSET)
+
+
 #define DMA_BASE 0x50000000  // dma
 
 #define DMA_SRC_ADDR      (DMA_BASE + DMA_FRONTEND_SRC_ADDR_REG_OFFSET)
@@ -61,6 +66,7 @@ static inline void sleep_loop() {
         asm volatile ("nop" :  : ); // nop operation
     }
 }
+
 
 int main(int argc, char const *argv[]) {
 
@@ -137,6 +143,23 @@ int main(int argc, char const *argv[]) {
     // however, allow access to destination array
     set_pmp_napot_access((uintptr_t) & dst, DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 1);
 
+
+    /*
+     * Setup IO-PMP
+     */
+    volatile uint64_t *iopmp_addr0 = (volatile uint64_t *) IOPMP_ADDR0;
+    volatile uint64_t *iopmp_cfg0  = (volatile uint64_t *) IOPMP_CFG0;
+    *iopmp_addr0 = 0xFFFFFFFFFFFFFFFFULL;//0x0706050403020100ULL;//;
+    *iopmp_cfg0 =  0x000000000000001FULL;//0x0706050403020100ULL;//;//(PMP_W | PMP_R | PMP_X) | PMP_NAPOT;
+    //ASSERT(*iopmp_addr0 == 0xFFFFFFFFFFFFFFFF & 0xFFF, "iopmp_addr0");
+    //ASSERT(*iopmp_cfg0 == ((PMP_W | PMP_R | PMP_X) | PMP_NAPOT), "iopmp_cfg0");
+    print_uart("iopmp_addr0: ");
+    print_uart_addr(*iopmp_addr0);
+    print_uart(" iopmp_cfg0: ");
+    print_uart_addr(*iopmp_cfg0);
+    print_uart("\n");
+
+
     /*
      * Test register access
      */
@@ -162,8 +185,8 @@ int main(int argc, char const *argv[]) {
     *dma_src = (uint64_t) & src;
     *dma_dst = (uint64_t) & dst;
     *dma_num_bytes = DMA_TRANSFER_SIZE;
-    *dma_conf = (DMA_CONF_DECOUPLE << DMA_FRONTEND_CONF_DECOUPLE_BIT) |
-                (DMA_CONF_DEBURST << DMA_FRONTEND_CONF_DEBURST_BIT) |
+    *dma_conf = (DMA_CONF_DECOUPLE  << DMA_FRONTEND_CONF_DECOUPLE_BIT) |
+                (DMA_CONF_DEBURST   << DMA_FRONTEND_CONF_DEBURST_BIT) |
                 (DMA_CONF_SERIALIZE << DMA_FRONTEND_CONF_SERIALIZE_BIT);
 
     print_uart("Start transfer\n");

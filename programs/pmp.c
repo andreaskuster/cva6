@@ -50,7 +50,7 @@ void detect_pmp() {
     if (read_csr(pmpcfg0) != 42 || read_csr(pmpaddr0) != 42 || read_csr(pmpaddr1) != 42) {
         print_uart("Pmp: read/write failed\n");
     } else {
-        print_uart("Dectect pmp: pmp0 detected\n");
+        print_uart("Detect PMP: PMP0 detected\n");
     }
 }
 
