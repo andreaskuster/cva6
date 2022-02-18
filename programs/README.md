@@ -39,6 +39,9 @@ Simulate using Questasim
 ```bash
 # run simulation
 make sim elf-bin=programs/dma_attack.elf batch-mode=1
+
+# preloading memory should be faster
+make sim preload=programs/dma_attack.elf batch-mode=1
 ```
 
 
