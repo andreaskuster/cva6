@@ -624,12 +624,23 @@ module ariane_peripherals #(
     end
 
 
+  // -------------------------------------
+  // Direct Memory Access Engine & IO-PMP
+  // -------------------------------------
+  //                           ┌───┐
+  //                           │   │───►
+  // ┌───────┐   ┌────────┐    │   │◄───
+  // │       ├──►│        ├───►│   │
+  // │  DMA  │   │ IO-PMP │    │ X │
+  // │       │◄──┤        │◄───┤ B │───►
+  // └───────┘   └────────┘    │ A │◄───
+  //       ▲         ▲         │ R │
+  //       │         └─────────┤   │
+  //       │                   │   │───►
+  //       └───────────────────┤   │◄───
+  //                           └───┘
   ariane_axi_soc::req_t  axi_iopmp_in_req, axi_iopmp_out_req;
   ariane_axi_soc::resp_t axi_iopmp_in_rsp, axi_iopmp_out_rsp;
-
-  // ----------------------------
-  // Direct Memory Access Engine
-  // ----------------------------
   if (InclDMA) begin : gen_dma
 
     `AXI_ASSIGN_FROM_REQ(mdma, axi_iopmp_out_req)
@@ -641,24 +652,24 @@ module ariane_peripherals #(
     `AXI_ASSIGN_FROM_RESP(sdma, axi_sdma_rsp)
 
     dma_core_wrap #(
-        .AXI_ADDR_WIDTH( AxiAddrWidth          ),
-        .AXI_DATA_WIDTH( AxiDataWidth             ),
+        .AXI_ADDR_WIDTH( AxiAddrWidth               ),
+        .AXI_DATA_WIDTH( AxiDataWidth               ),
         .AXI_ID_WIDTH  ( ariane_soc::IdWidth        ),
-        .AXI_USER_WIDTH( AxiUserWidth             ),
+        .AXI_USER_WIDTH( AxiUserWidth               ),
         // AXI request/response
         .axi_req_t     ( ariane_axi_soc::req_t      ),
         .axi_rsp_t     ( ariane_axi_soc::resp_t     ),
         .axi_req_slv_t ( ariane_axi_soc::req_slv_t  ),
         .axi_rsp_slv_t ( ariane_axi_soc::resp_slv_t )
     ) i_dma (
-        .clk_i    ( clk_i        ),
-        .rst_ni   ( rst_ni   ),
+        .clk_i    ( clk_i            ),
+        .rst_ni   ( rst_ni           ),
         // slave port
-        .slv_req_i( axi_sdma_req ),
-        .slv_rsp_o( axi_sdma_rsp ),
+        .slv_req_i( axi_sdma_req     ),
+        .slv_rsp_o( axi_sdma_rsp     ),
         // master port
-        .mst_req_o( axi_iopmp_in_req ), // axi_mdma_req ),
-        .mst_rsp_i( axi_iopmp_in_rsp )  // axi_mdma_rsp )
+        .mst_req_o( axi_iopmp_in_req ),
+        .mst_rsp_i( axi_iopmp_in_rsp )
     );
 
   end else begin : gen_dma_disabled
@@ -673,11 +684,11 @@ module ariane_peripherals #(
         .req_t      ( ariane_axi_soc::req_slv_t  ),
         .resp_t     ( ariane_axi_soc::resp_slv_t )
     ) i_gpio_err_slv (
-        .clk_i      ( clk_i      ),
-        .rst_ni     ( rst_ni ),
-        .test_i     ( 1'b0    ),
-        .slv_req_i  ( dma_req ),
-        .slv_resp_o ( dma_resp )
+        .clk_i      ( clk_i    ),
+        .rst_ni     ( rst_ni   ),
+        .slv_req_i  ( dma_req  ),
+        .slv_resp_o ( dma_resp ),
+        .test_i     ( 1'b0     )
     );
 
     assign mdma.ar_valid = 1'b0;
@@ -689,12 +700,12 @@ module ariane_peripherals #(
   end
 
 
-
   // ----------------------------------------
   // Input/Output Physical Memory Protection
   // ----------------------------------------
   if (InclIOPMP) begin : gen_iopmp
 
+    
     ariane_axi_soc::req_slv_t  axi_iopmp_cfg_req;
     ariane_axi_soc::resp_slv_t axi_iopmp_cfg_rsp;
     `AXI_ASSIGN_TO_REQ(axi_iopmp_cfg_req, iopmp)
@@ -708,10 +719,10 @@ module ariane_peripherals #(
     // AXI to register bus (for the pmp configuration)
     // -------------------
     axi_to_reg #(
-        .ADDR_WIDTH( AxiAddrWidth          ),
-        .DATA_WIDTH( AxiDataWidth             ),
+        .ADDR_WIDTH( AxiAddrWidth               ),
+        .DATA_WIDTH( AxiDataWidth               ),
         .ID_WIDTH  ( ariane_soc::IdWidthSlave   ),
-        .USER_WIDTH( AxiUserWidth             ),
+        .USER_WIDTH( AxiUserWidth               ),
         .axi_req_t ( ariane_axi_soc::req_slv_t  ),
         .axi_rsp_t ( ariane_axi_soc::resp_slv_t ),
         .reg_req_t ( iopmp_reg_req_t            ),
@@ -719,7 +730,7 @@ module ariane_peripherals #(
 
     ) axi_to_reg0 (
         .clk_i     ( clk_i             ),
-        .rst_ni    ( rst_ni        ),
+        .rst_ni    ( rst_ni            ),
         .testmode_i( 1'b0              ),
         .axi_req_i ( axi_iopmp_cfg_req ),
         .axi_rsp_o ( axi_iopmp_cfg_rsp ),
@@ -732,10 +743,10 @@ module ariane_peripherals #(
     // AXI IO-PMP
     // ------------
     axi_io_pmp #(
-        .ADDR_WIDTH   ( AxiAddrWidth         ),
-        .DATA_WIDTH   ( AxiDataWidth            ),
+        .ADDR_WIDTH   ( AxiAddrWidth              ),
+        .DATA_WIDTH   ( AxiDataWidth              ),
         .ID_WIDTH     ( ariane_soc::IdWidth       ),
-        .USER_WIDTH   ( AxiUserWidth            ),
+        .USER_WIDTH   ( AxiUserWidth              ),
         // AXI channel structs
         .axi_aw_chan_t( ariane_axi_soc::aw_chan_t ),
         .axi_w_chan_t ( ariane_axi_soc::w_chan_t  ),
@@ -751,14 +762,14 @@ module ariane_peripherals #(
         // PMP parameters
         .NR_ENTRIES   ( 16                        )
     ) axi_io_pmp0 (
-        .clk_i    ( clk_i             ),
-        .rst_ni   ( rst_ni          ),
+        .clk_i    ( clk_i            ),
+        .rst_ni   ( rst_ni           ),
         // slave port
         .slv_req_i( axi_iopmp_in_req ),
         .slv_rsp_o( axi_iopmp_in_rsp ),
         // master port
-        .mst_req_o( axi_iopmp_out_req  ),
-        .mst_rsp_i( axi_iopmp_out_rsp  ),
+        .mst_req_o( axi_iopmp_out_req ),
+        .mst_rsp_i( axi_iopmp_out_rsp ),
         // configuration port
         .cfg_req_i( reg_iopmp_cfg_req ),
         .cfg_rsp_o( reg_iopmp_cfg_rsp )
@@ -766,9 +777,9 @@ module ariane_peripherals #(
 
   end else begin : gen_iopmp_disabled
 
-    //
+    //-----------
     // No IO-PMP: respond with error on the config port
-    //
+    //----------
     ariane_axi_soc::req_slv_t  axi_iopmp_cfg_req;
     ariane_axi_soc::resp_slv_t axi_iopmp_cfg_rsp;
     `AXI_ASSIGN_TO_REQ(axi_iopmp_cfg_req, iopmp)
@@ -779,15 +790,16 @@ module ariane_peripherals #(
         .resp_t     ( ariane_axi_soc::resp_slv_t )
     ) i_gpio_err_slv (
         .clk_i      ( clk_i             ),
-        .rst_ni     ( rst_ni        ),
+        .rst_ni     ( rst_ni            ),
         .test_i     ( 1'b0              ),
         .slv_req_i  ( axi_iopmp_cfg_req ),
         .slv_resp_o ( axi_iopmp_cfg_rsp )
     );
 
-    //
+    //-----------
     // No IO-PMP: directly wire the signals
-    //
+    //-----------
+    // req in -> req out
     assign axi_iopmp_out_req.aw        = axi_iopmp_in_req.aw;
     assign axi_iopmp_out_req.aw_valid  = axi_iopmp_in_req.aw_valid;
     assign axi_iopmp_out_req.w         = axi_iopmp_in_req.w;
@@ -796,7 +808,7 @@ module ariane_peripherals #(
     assign axi_iopmp_out_req.ar        = axi_iopmp_in_req.ar;
     assign axi_iopmp_out_req.ar_valid  = axi_iopmp_in_req.ar_valid;
     assign axi_iopmp_out_req.r_ready   = axi_iopmp_in_req.r_ready;
-
+    // rsp out -> rsp in
     assign axi_iopmp_in_rsp.aw_ready = axi_iopmp_out_rsp.aw_ready;
     assign axi_iopmp_in_rsp.ar_ready = axi_iopmp_out_rsp.ar_ready;
     assign axi_iopmp_in_rsp.w_ready  = axi_iopmp_out_rsp.w_ready;
