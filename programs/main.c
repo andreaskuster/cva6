@@ -24,13 +24,13 @@
 #include "trap.h"
 #include "encoding.h"
 #include "cva6_idma.h"
-#include "iopmp.h"
-#include "io_pmp.h"
+// #include "iopmp.h"
+// #include "io_pmp.h"
 
 
 #define IOPMP_BASE        0x50010000 // io-pmp
-#define IOPMP_ADDR0       (IOPMP_BASE + IO_PMP_PMP_ADDR_0_REG_OFFSET)
-#define IOPMP_CFG0        (IOPMP_BASE + IO_PMP_PMP_CFG_0_REG_OFFSET)
+#define IOPMP_ADDR0       (IOPMP_BASE + 0x0)  //IO_PMP_PMP_ADDR_0_REG_OFFSET)
+#define IOPMP_CFG0        (IOPMP_BASE + 0x80) //IO_PMP_PMP_CFG_0_REG_OFFSET)
 
 
 
@@ -94,7 +94,7 @@ int main(int argc, char const *argv[]) {
     volatile uint64_t *dma_dst = (volatile uint64_t *) DMA_DST_ADDR;
     volatile uint64_t *dma_num_bytes = (volatile uint64_t *) DMA_NUMBYTES_ADDR;
     volatile uint64_t *dma_conf = (volatile uint64_t *) DMA_CONF_ADDR;
-    volatile uint64_t* dma_status = (volatile uint64_t*)DMA_STATUS_ADDR; // not used in current implementation
+    // volatile uint64_t* dma_status = (volatile uint64_t*)DMA_STATUS_ADDR; // not used in current implementation
     volatile uint64_t *dma_nextid = (volatile uint64_t *) DMA_NEXTID_ADDR;
     volatile uint64_t *dma_done = (volatile uint64_t *) DMA_DONE_ADDR;
 
@@ -102,7 +102,7 @@ int main(int argc, char const *argv[]) {
      * Prepare data
      */
     // allocate source array
-    uint64_t src[DMA_TRANSFER_SIZE / sizeof(uint64_t)];
+    uint64_t src[DMA_TRANSFER_SIZE / sizeof(uint64_t)] __attribute__ ((aligned (16)));
     if (VERBOSE) {
         // print array stack address
         print_uart("Source array @0x");
@@ -114,7 +114,7 @@ int main(int argc, char const *argv[]) {
     char __attribute__((unused)) guard[0x1 << 12];
 
     // allocate destination array
-    uint64_t dst[DMA_TRANSFER_SIZE / sizeof(uint64_t)];
+    uint64_t dst[DMA_TRANSFER_SIZE / sizeof(uint64_t)] __attribute__ ((aligned (16)));
     if (VERBOSE) {
         // print array stack address
         print_uart("Destination array @0x");
@@ -140,29 +140,28 @@ int main(int argc, char const *argv[]) {
     set_pmp_allow_all(0); // for debugging, should allow access to the complete address space
 
     // block access to source array
-    // set_pmp_napot_access((uintptr_t) & src, DMA_TRANSFER_SIZE, PMP_NO_ACCESS, 0);
-    // // however, allow access to destination array
-    // set_pmp_napot_access((uintptr_t) & dst, DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 1);
-
+    //set_pmp_napot_access((uintptr_t) & src, DMA_TRANSFER_SIZE, PMP_NO_ACCESS, 0);
+    // however, allow access to destination array
+    //set_pmp_napot_access((uintptr_t) & dst, DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 0); // 
 
     /*
      * Setup IO-PMP
      */
-    // // detect_iopmp();
-    // // detect_iopmp_granule();
-    // // set_iopmp_allow_all(0);
+    // detect_iopmp();
+    // detect_iopmp_granule();
+    // set_iopmp_allow_all(0);
 
-    // volatile uint64_t *iopmp_addr0 = (volatile uint64_t *) IOPMP_ADDR0;
-    // volatile uint64_t *iopmp_cfg0  = (volatile uint64_t *) IOPMP_CFG0;
-    // *iopmp_addr0 = 0xFFFFFFFFFFFFFFFFULL; // 0x0706050403020100ULL;
-    // *iopmp_cfg0 =  0x000000000000001FULL; // 0x0706050403020100ULL; // (PMP_W | PMP_R | PMP_X) | PMP_NAPOT;
-    // // // ASSERT(*iopmp_addr0 == 0xFFFFFFFFFFFFFFFF & 0xFFF, "iopmp_addr0");
-    // // // ASSERT(*iopmp_cfg0 == ((PMP_W | PMP_R | PMP_X) | PMP_NAPOT), "iopmp_cfg0");
-    // print_uart("iopmp_addr0: ");
-    // print_uart_addr(*iopmp_addr0);
-    // print_uart(" iopmp_cfg0: ");
-    // print_uart_addr(*iopmp_cfg0);
-    // print_uart("\n");
+    volatile uint64_t *iopmp_addr0 = (volatile uint64_t *) IOPMP_ADDR0;
+    volatile uint64_t *iopmp_cfg0  = (volatile uint64_t *) IOPMP_CFG0;
+    *iopmp_addr0 = 0xFFFFFFFFFFFFFFFFULL; // 0x0706050403020100ULL;
+    *iopmp_cfg0 =  0x000000000000001FULL; // 0x0706050403020100ULL; // (PMP_W | PMP_R | PMP_X) | PMP_NAPOT;
+    // // ASSERT(*iopmp_addr0 == 0xFFFFFFFFFFFFFFFF & 0xFFF, "iopmp_addr0");
+    // // ASSERT(*iopmp_cfg0 == ((PMP_W | PMP_R | PMP_X) | PMP_NAPOT), "iopmp_cfg0");
+    print_uart("iopmp_addr0: ");
+    print_uart_addr(*iopmp_addr0);
+    print_uart(" iopmp_cfg0: ");
+    print_uart_addr(*iopmp_cfg0);
+    print_uart("\n");
 
 
     /*
