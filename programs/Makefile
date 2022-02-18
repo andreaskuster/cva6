@@ -14,7 +14,7 @@ LDFLAGS = -nostdlib -nodefaultlibs -nostartfiles -e _prog_start
 
 INCLUDES = -I./ -I./src
 
-SRCS_C = main.c uart.c pmp.c trap.c #iopmp.c
+SRCS_C = main.c uart.c pmp.c trap.c iopmp.c
 SRCS_ASM = startup.S
 OBJS_C = $(SRCS_C:.c=.o)
 OBJS_S = $(SRCS_ASM:.S=.o)

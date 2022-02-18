@@ -24,14 +24,13 @@
 #include "trap.h"
 #include "encoding.h"
 #include "cva6_idma.h"
-// #include "iopmp.h"
-// #include "io_pmp.h"
+#include "iopmp.h"
+#include "io_pmp.h"
 
 
 #define IOPMP_BASE        0x50010000 // io-pmp
-#define IOPMP_ADDR0       (IOPMP_BASE + 0x0)  //IO_PMP_PMP_ADDR_0_REG_OFFSET)
-#define IOPMP_CFG0        (IOPMP_BASE + 0x80) //IO_PMP_PMP_CFG_0_REG_OFFSET)
-
+#define IOPMP_ADDR0       (IOPMP_BASE + IO_PMP_PMP_ADDR_0_REG_OFFSET)
+#define IOPMP_CFG0        (IOPMP_BASE + IO_PMP_PMP_CFG_0_REG_OFFSET)
 
 
 #define DMA_BASE          0x50000000  // dma
@@ -59,7 +58,6 @@ if (!(expr)) {                        \
     print_uart("assertion failed: "); \
     print_uart(msg);                  \
     print_uart("\n");                 \
-    return -1;                        \
 }
 
 static inline void sleep_loop() {
@@ -102,22 +100,22 @@ int main(int argc, char const *argv[]) {
      * Prepare data
      */
     // allocate source array
-    uint64_t src[DMA_TRANSFER_SIZE / sizeof(uint64_t)] __attribute__ ((aligned (16)));
+    uint64_t src[4096 / sizeof(uint64_t)] __attribute__ ((aligned (4096)));
     if (VERBOSE) {
         // print array stack address
-        print_uart("Source array @0x");
+        print_uart("Source array @ 0x");
         print_uart_addr((uint64_t) & src);
         print_uart("\n");
     }
 
     // 4KB guard
-    char __attribute__((unused)) guard[0x1 << 12];
+    char __attribute__((unused)) guard[4096] __attribute__ ((aligned (4096)));
 
     // allocate destination array
-    uint64_t dst[DMA_TRANSFER_SIZE / sizeof(uint64_t)] __attribute__ ((aligned (16)));
+    uint64_t dst[4096 / sizeof(uint64_t)] __attribute__ ((aligned (4096)));
     if (VERBOSE) {
         // print array stack address
-        print_uart("Destination array @0x");
+        print_uart("Destination array @ 0x");
         print_uart_addr((uint64_t) & dst);
         print_uart("\n");
     }
@@ -137,26 +135,24 @@ int main(int argc, char const *argv[]) {
     detect_granule();
     set_pmp_zero();
 
-    set_pmp_allow_all(0); // for debugging, should allow access to the complete address space
+    // set_pmp_allow_all(0); // for debugging, should allow access to the complete address space
 
     // block access to source array
-    //set_pmp_napot_access((uintptr_t) & src, DMA_TRANSFER_SIZE, PMP_NO_ACCESS, 0);
+    set_pmp_napot_access((uintptr_t) & src, DMA_TRANSFER_SIZE, PMP_NO_ACCESS, 0);
     // however, allow access to destination array
-    //set_pmp_napot_access((uintptr_t) & dst, DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 0); // 
+    set_pmp_napot_access(((uintptr_t) &dst)-DMA_TRANSFER_SIZE, 2*DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 1);
 
     /*
      * Setup IO-PMP
      */
-    // detect_iopmp();
-    // detect_iopmp_granule();
-    // set_iopmp_allow_all(0);
+    detect_iopmp();
+    detect_iopmp_granule();
+    set_iopmp_allow_all(0); // for debugging, should allow access to the complete address space
+    //set_iopmp_napot_access(((uintptr_t) &dst)-4096, 8192, (PMP_R | PMP_W | PMP_X), 0);
+    //set_iopmp_napot_access(((uintptr_t) &dst), 4096, PMP_NO_ACCESS, 0);
 
     volatile uint64_t *iopmp_addr0 = (volatile uint64_t *) IOPMP_ADDR0;
     volatile uint64_t *iopmp_cfg0  = (volatile uint64_t *) IOPMP_CFG0;
-    *iopmp_addr0 = 0xFFFFFFFFFFFFFFFFULL; // 0x0706050403020100ULL;
-    *iopmp_cfg0 =  0x000000000000001FULL; // 0x0706050403020100ULL; // (PMP_W | PMP_R | PMP_X) | PMP_NAPOT;
-    // // ASSERT(*iopmp_addr0 == 0xFFFFFFFFFFFFFFFF & 0xFFF, "iopmp_addr0");
-    // // ASSERT(*iopmp_cfg0 == ((PMP_W | PMP_R | PMP_X) | PMP_NAPOT), "iopmp_cfg0");
     print_uart("iopmp_addr0: ");
     print_uart_addr(*iopmp_addr0);
     print_uart(" iopmp_cfg0: ");
@@ -218,7 +214,7 @@ int main(int argc, char const *argv[]) {
 
         uintptr_t dst_val = read_pmp_locked((uintptr_t) & (dst[i]), 8);
         print_uart("Try reading dst: 0x");
-        print_uart_int(dst_val);
+        print_uart_addr(dst_val);
         print_uart("\n");
 
         ASSERT(dst_val == 42, "dst");

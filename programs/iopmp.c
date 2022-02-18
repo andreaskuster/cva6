@@ -33,26 +33,26 @@ void detect_iopmp() {
 
     // read/write base registers
     volatile uintptr_t *pmpcfg0 = (volatile uintptr_t *) IOPMP_CFG_BASE;
-    volatile uintptr_t *pmpaddr0 = (volatile uintptr_t *) IOPMP_ADDR_BASE;
+    volatile uintptr_t *pmpcfg1 = (volatile uintptr_t *) (IOPMP_CFG_BASE + 0x8ULL);
 
     // read old value
-    uintptr_t old_cfg = *pmpcfg0;
-    uintptr_t old_addr = *pmpaddr0;
+    uintptr_t old_cfg0 = *pmpcfg0;
+    uintptr_t old_cfg1 = *pmpcfg1;
 
     // set new value
     *pmpcfg0 = 42;
-    *pmpaddr0 = 42;
+    *pmpcfg1 = 42;
 
     // check if read-back value matches
-    if (*pmpcfg0 != 42 || *pmpaddr0 != 42) {
+    if (*pmpcfg0 != 42 || *pmpcfg1 != 42) {
         print_uart("IO-PMP0: read/write failed\n");
     } else {
         print_uart("IO-PMP0: detected\n");
     }
 
     // restore previous value
-    *pmpcfg0 = old_cfg;
-    *pmpaddr0 = old_addr;
+    *pmpcfg0 = old_cfg0;
+    *pmpcfg1 = old_cfg1;
 }
 
 void detect_iopmp_granule() {
@@ -89,7 +89,7 @@ iopmpcfg_t set_iopmp(iopmpcfg_t p) {
     }
     // POST: 0 <= p.slot < 16
 
-    volatile uintptr_t *pmpcfg = (volatile uintptr_t *) (IOPMP_CFG_BASE + ((p.slot < 8) ? 0 : 8));
+    volatile uintptr_t *pmpcfg = (volatile uintptr_t *) (IOPMP_CFG_BASE + ((p.slot < 8) ? 0x0ULL : 0x8ULL));
 
     uintptr_t mask, shift;
     if(p.slot >= 8){
@@ -116,7 +116,7 @@ iopmpcfg_t set_iopmp_napot(uintptr_t base, uintptr_t range, uintptr_t slot) {
 
 iopmpcfg_t set_iopmp_napot_access(uintptr_t base, uintptr_t range, uintptr_t access, uintptr_t slot) {
     iopmpcfg_t p;
-    p.cfg = access | (range > ipmp_granule ? PMP_NAPOT : PMP_NA4);
+    p.cfg = access | PMP_NAPOT;
     p.a0 = (base + (range / 2 - 1)) >> PMP_SHIFT;
     p.slot = slot;
     return set_iopmp(p);
