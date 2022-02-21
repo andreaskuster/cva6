@@ -116,7 +116,7 @@ iopmpcfg_t set_iopmp_napot(uintptr_t base, uintptr_t range, uintptr_t slot) {
 
 iopmpcfg_t set_iopmp_napot_access(uintptr_t base, uintptr_t range, uintptr_t access, uintptr_t slot) {
     iopmpcfg_t p;
-    p.cfg = access | PMP_NAPOT;
+    p.cfg = access | (range > ipmp_granule ? PMP_NAPOT : PMP_NA4);
     p.a0 = (base + (range / 2 - 1)) >> PMP_SHIFT;
     p.slot = slot;
     return set_iopmp(p);

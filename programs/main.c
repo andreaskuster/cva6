@@ -58,6 +58,8 @@ if (!(expr)) {                        \
     print_uart("assertion failed: "); \
     print_uart(msg);                  \
     print_uart("\n");                 \
+    print_uart("Spin-loop.\n");       \
+    while (1) {};                     \
 }
 
 static inline void sleep_loop() {
@@ -138,18 +140,18 @@ int main(int argc, char const *argv[]) {
     // set_pmp_allow_all(0); // for debugging, should allow access to the complete address space
 
     // block access to source array
-    set_pmp_napot_access((uintptr_t) & src, DMA_TRANSFER_SIZE, PMP_NO_ACCESS, 0);
+    set_pmp_napot_access((uintptr_t) &src, DMA_TRANSFER_SIZE, PMP_NO_ACCESS, 0); // does not have to be done explicitly..but can
     // however, allow access to destination array
     set_pmp_napot_access(((uintptr_t) &dst)-DMA_TRANSFER_SIZE, 2*DMA_TRANSFER_SIZE, (PMP_R | PMP_W | PMP_X), 1);
 
     /*
-     * Setup IO-PMP
+     * Setup IO-PMP: allow
      */
     detect_iopmp();
     detect_iopmp_granule();
     set_iopmp_allow_all(0); // for debugging, should allow access to the complete address space
-    //set_iopmp_napot_access(((uintptr_t) &dst)-4096, 8192, (PMP_R | PMP_W | PMP_X), 0);
-    //set_iopmp_napot_access(((uintptr_t) &dst), 4096, PMP_NO_ACCESS, 0);
+    // set_iopmp_napot_access(((uintptr_t) &src), 4096, (PMP_R | PMP_W | PMP_X), 0);
+    // set_iopmp_napot_access(((uintptr_t) &dst), 4096, (PMP_R | PMP_W | PMP_X), 1);
 
     volatile uint64_t *iopmp_addr0 = (volatile uint64_t *) IOPMP_ADDR0;
     volatile uint64_t *iopmp_cfg0  = (volatile uint64_t *) IOPMP_CFG0;
@@ -228,6 +230,83 @@ int main(int argc, char const *argv[]) {
 
     }
     print_uart("Transfer successfully validated.\n");
+
+
+    /*
+     * Reset dst array
+     */
+    print_uart("Reset destination array.\n");
+    for (size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++) {
+        dst[i] = 0;
+    }
+
+    /*
+     * Setup IO-PMP: disallow
+     */
+    print_uart("IO-PMP: Lock src array.\n");
+    set_iopmp_napot_access(((uintptr_t) &src), 4096, PMP_NO_ACCESS, 0);
+    print_uart("iopmp_addr0: ");
+    print_uart_addr(*iopmp_addr0);
+    print_uart(" iopmp_cfg0: ");
+    print_uart_addr(*iopmp_cfg0);
+    print_uart("\n");
+
+
+    /*
+     * Test DMA transfer
+     */
+    print_uart("Initiate dma request\n");
+
+    // setup src to dst memory transfer
+    *dma_src = (uint64_t) & src;
+    *dma_dst = (uint64_t) & dst;
+    *dma_num_bytes = DMA_TRANSFER_SIZE;
+    *dma_conf = (DMA_CONF_DECOUPLE  << DMA_FRONTEND_CONF_DECOUPLE_BIT) |
+                (DMA_CONF_DEBURST   << DMA_FRONTEND_CONF_DEBURST_BIT) |
+                (DMA_CONF_SERIALIZE << DMA_FRONTEND_CONF_SERIALIZE_BIT);
+
+    print_uart("Start transfer\n");
+
+    // launch transfer: read id
+    transfer_id = *dma_nextid;
+
+    // poll wait for transfer to finish
+    do {
+        print_uart("transfer_id: ");
+        print_uart_int(transfer_id);
+        print_uart(" done_id: ");
+        print_uart_int(*dma_done);
+        print_uart(" dst[0]: ");
+        print_uart_int(dst[0]);
+        print_uart("\n");
+    } while (*dma_done != transfer_id);
+
+    print_uart("Transfer finished\n");
+
+    // TODO: flush cache?
+
+    // check result
+    for (size_t i = 0; i < DMA_TRANSFER_SIZE / sizeof(uint64_t); i++) {
+
+        uintptr_t dst_val = read_pmp_locked((uintptr_t) & (dst[i]), 8);
+        print_uart("Try reading dst: 0x");
+        print_uart_addr(dst_val);
+        print_uart("\n");
+
+        ASSERT(dst_val == 42, "dst");
+
+        if (TEST_PMP_SRC) {
+            uintptr_t src_val = read_pmp_locked((uintptr_t) & (src[i]), 8);
+            print_uart("Try reading src: 0x");
+            print_uart_int(src_val);
+            print_uart("\n");
+        }
+
+    }
+    print_uart("Transfer successfully validated.\n");
+
+
+
 
     print_uart("All done, spin-loop.\n");
     while (1) {

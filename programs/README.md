@@ -47,20 +47,30 @@ make sim preload=programs/dma_attack.elf batch-mode=1
 
 Example output:
 ```
-Hello CVA6 from iDMA!
-Source array      @0x0000000080FFFF88
-Destination array @0x0000000080FFFB78
-Dectect pmp: pmp0 detected
-Pmp granule: 00000008
-PMP 1 setup to lock src array.
-PMP 2 setup to give full r/w/x access to dst array
-Test register read/write
-Initiate dma request
-Start transfer
-Transfer finished: transfer_id: 00000002 done_id: 00000002 dst[0]: 0000002A
-Try reading dst: 0x0000002A
-Try reading dst: 0x0000002A
-Transfer successfully validated.
-All done, spin-loop.
-
+# Hello CVA6 from iDMA!
+# Source array @ 0x0000000080FFE000
+# Destination array @ 0x0000000080FFD000
+# Detect PMP: PMP0 detected
+# PMP granularity: 00000008
+# IO-PMP0: detected
+# IO-PMP granularity: 00001000
+# iopmp_addr0: 003FFFFFFFFFFFFF iopmp_cfg0: 000000000000001F
+# Test register read/write
+# Initiate dma request
+# Start transfer
+# transfer_id: 00000002 done_id: 00000002 dst[0]: 0000002A
+# Transfer finished
+# Try reading dst: 0x000000000000002A
+# Try reading dst: 0x000000000000002A
+# Transfer successfully validated.
+# Reset destination array.
+# IO-PMP: Lock src array.
+# iopmp_addr0: 00000000203FF9FF iopmp_cfg0: 0000000000000010
+# Initiate dma request
+# Start transfer
+# transfer_id: 00000003 done_id: 00000003 dst[0]: 00000000
+# Transfer finished
+# Try reading dst: 0x0000000000000000
+# assertion failed: dst
+# Spin-loop.
 ```
