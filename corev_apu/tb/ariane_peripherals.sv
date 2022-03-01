@@ -772,7 +772,8 @@ module ariane_peripherals #(
         .mst_rsp_i( axi_iopmp_out_rsp ),
         // configuration port
         .cfg_req_i( reg_iopmp_cfg_req ),
-        .cfg_rsp_o( reg_iopmp_cfg_rsp )
+        .cfg_rsp_o( reg_iopmp_cfg_rsp ),
+        .devmode_i( 1'b0              )
     );
 
   end else begin : gen_iopmp_disabled
