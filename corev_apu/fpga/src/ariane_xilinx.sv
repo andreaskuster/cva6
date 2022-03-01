@@ -12,6 +12,9 @@
 //         Andreas Kuster <kustera@ethz.ch>
 // Description: Xilinx FPGA top-level
 
+`include "axi/assign.svh"
+`include "register_interface/typedef.svh"
+
 module ariane_xilinx (
 `ifdef GENESYSII
   input  logic         sys_clk_p   ,
@@ -274,15 +277,16 @@ assign addr_map = '{
   '{ idx: ariane_soc::SPI,      start_addr: ariane_soc::SPIBase,      end_addr: ariane_soc::SPIBase + ariane_soc::SPILength           },
   '{ idx: ariane_soc::Ethernet, start_addr: ariane_soc::EthernetBase, end_addr: ariane_soc::EthernetBase + ariane_soc::EthernetLength },
   '{ idx: ariane_soc::GPIO,     start_addr: ariane_soc::GPIOBase,     end_addr: ariane_soc::GPIOBase + ariane_soc::GPIOLength         },
-  '{ idx: ariane_soc::SDMA,     start_addr: ariane_soc::DMABase,     end_addr: ariane_soc::DMABase + ariane_soc::DMALength         },
+  '{ idx: ariane_soc::SDMA,     start_addr: ariane_soc::DMABase,      end_addr: ariane_soc::DMABase + ariane_soc::DMALength           },
+  '{ idx: ariane_soc::IOPMP,    start_addr: ariane_soc::IOPMPBase,    end_addr: ariane_soc::IOPMPBase + ariane_soc::IOPMPLength       },
   '{ idx: ariane_soc::DRAM,     start_addr: ariane_soc::DRAMBase,     end_addr: ariane_soc::DRAMBase + ariane_soc::DRAMLength         }
 };
 
 localparam axi_pkg::xbar_cfg_t AXI_XBAR_CFG = '{
   NoSlvPorts:         ariane_soc::NrSlaves,
   NoMstPorts:         ariane_soc::NB_PERIPHERALS,
-  MaxMstTrans:        1, // Probably requires update
-  MaxSlvTrans:        1, // Probably requires update
+  MaxMstTrans:        4, // Probably requires update
+  MaxSlvTrans:        4, // Probably requires update
   FallThrough:        1'b0,
   LatencyMode:        axi_pkg::CUT_ALL_PORTS,
   AxiIdWidthSlvPorts: AxiIdWidthMaster,
@@ -799,6 +803,7 @@ ariane_peripherals #(
     .InclUART     ( 1'b1             ),
     .InclGPIO     ( 1'b1             ),
     .InclDMA      ( 1'b1             ),
+    .InclIOPMP    ( 1'b1             ),
     `ifdef KINTEX7
     .InclSPI      ( 1'b1         ),
     .InclEthernet ( 1'b1         )
@@ -825,6 +830,7 @@ ariane_peripherals #(
     .timer        ( master[ariane_soc::Timer]    ),
     .sdma         ( master[ariane_soc::SDMA]     ),
     .mdma         ( slave[ariane_soc::MDMA]      ),
+    .iopmp        ( master[ariane_soc::IOPMP]    ),
     .irq_o        ( irq                          ),
     .rx_i         ( rx                           ),
     .tx_o         ( tx                           ),
